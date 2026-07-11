@@ -1,0 +1,22 @@
+[project]
+name = "vatespira-backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "deepagents>=0.6.12",
+    "langgraph>=0.5",
+    "langchain>=0.3",
+    "langchain-google-genai",
+    "langchain-deepseek",
+    "fastapi",
+    "uvicorn[standard]",
+    "supabase",
+    "asyncpg",
+    "pydantic>=2",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

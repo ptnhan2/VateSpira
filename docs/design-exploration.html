@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VateSpira — Design Direction (deep)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#fafaf7;color:#222;padding:0}
+.intro{padding:40px 48px 30px;border-bottom:1px solid #e2dfd6;max-width:1100px;margin:0 auto}
+.intro h1{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;margin-bottom:8px}
+.intro p{font-size:14px;color:#666;line-height:1.6;max-width:780px;margin-bottom:8px}
+.principles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;max-width:900px}
+.principles .pr{padding:12px 14px;background:#fff;border:1px solid #e2dfd6;border-radius:4px;font-size:12px}
+.principles .pr .h{font-weight:600;color:#a93226;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.principles .pr .d{color:#666;line-height:1.5}
+.dir{padding:40px 48px;border-bottom:1px solid #e2dfd6;max-width:1100px;margin:0 auto}
+.dir .dh{display:flex;align-items:baseline;gap:14px;margin-bottom:4px}
+.dir .dn{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:#222}
+.dir .dline{font-size:13px;color:#888;font-style:italic;font-family:'Crimson Pro',serif}
+.dir .ddesc{font-size:13px;color:#666;max-width:780px;line-height:1.6;margin:8px 0 20px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mode{border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}
+.mode .mh{padding:10px 16px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.mode .body{padding:20px}
+.palette{display:flex;gap:0;margin-bottom:16px;border-radius:4px;overflow:hidden}
+.palette .sw{flex:1;height:36px;display:flex;align-items:flex-end;padding:4px 6px;font-family:'JetBrains Mono',monospace;font-size:8px}
+.type-sample{margin-bottom:16px}
+.type-sample .ts-d{font-size:22px;font-weight:600;line-height:1.1;margin-bottom:2px}
+.type-sample .ts-b{font-size:14px;line-height:1.5;margin-bottom:2px}
+.type-sample .ts-m{font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.7}
+.components{display:flex;flex-direction:column;gap:10px}
+.cmp{padding:10px 12px;border-radius:5px;font-size:12px}
+.btn{display:inline-block;padding:7px 18px;border-radius:20px;font-size:12px;font-weight:500;margin-right:6px;cursor:pointer;border:1px solid}
+.card{padding:12px;border-radius:6px;border:1px solid;display:flex;gap:10px;align-items:center}
+.card .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;flex-shrink:0}
+.card .ci .nm{font-size:13px;font-weight:600}
+.card .ci .sm{font-size:11px;opacity:.7;font-style:italic;font-family:'Crimson Pro',serif}
+.input{padding:8px 12px;border-radius:20px;border:1px solid;font-size:12px;font-style:italic;font-family:'Crimson Pro',serif;opacity:.7}
+.editor-line{padding:8px 0;font-family:'Crimson Pro',serif;font-size:14px;line-height:1.6;border-bottom:1px dashed rgba(0,0,0,.08)}
+.editor-line .focus{background:rgba(169,50,38,.08);border-radius:2px;padding:1px 2px}
+.editor-line .noun{color:#a93226}.editor-line .adj{color:#5a7a5a}.editor-line .fade{opacity:.35}
+.chat{display:flex;flex-direction:column;gap:5px}
+.bubble{padding:7px 11px;border-radius:10px;font-size:12px;max-width:85%;font-family:'Crimson Pro',serif}
+.bubble.me{align-self:flex-end}
+.bubble.ai{align-self:flex-start}
+.hitl{padding:10px;border-radius:6px;border:1px dashed;font-size:11px}
+.hitl .hh{font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:5px}
+.hitl .diff{font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 7px;border-radius:3px;margin-bottom:6px}
+.hitl .diff .del{text-decoration:line-through;opacity:.6}
+.hitl .diff .add{}
+.hitl .acts{display:flex;gap:5px}
+.hitl .acts .b{padding:4px 12px;border-radius:14px;font-size:10px;font-weight:500;border:1px solid;cursor:pointer}
+.motion{margin-top:14px;padding:10px 12px;border-radius:5px;font-size:11px;font-style:italic;font-family:'Crimson Pro',serif}
+.motion .ml{font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700;font-style:normal;font-family:'Inter',sans-serif;margin-bottom:3px;opacity:.7}
+.inspo{margin-top:14px;font-size:11px;color:#888;font-style:italic;font-family:'Crimson Pro',serif}
+.inspo b{color:#444;font-style:normal;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+
+/* Direction A: Raw Elegance — iA Writer lineage */
+.A-light{background:#fbfaf6;color:#1a1a1a}
+.A-light .mh{background:#f0eee8;color:#888}
+.A-light .palette .sw{color:#666}
+.A-light .cmp{background:rgba(0,0,0,.03)}
+.A-light .btn.primary{background:#1a1a1a;color:#fbfaf6;border-color:#1a1a1a}
+.A-light .btn.ghost{background:transparent;color:#1a1a1a;border-color:#ccc}
+.A-light .card{background:#fff;border-color:#e5e2da}
+.A-light .card .av{background:#1a1a1a;color:#fbfaf6}
+.A-light .input{background:#fff;border-color:#e5e2da;color:#888}
+.A-light .bubble.me{background:#1a1a1a;color:#fbfaf6}
+.A-light .bubble.ai{background:#f0eee8;color:#1a1a1a}
+.A-light .hitl{background:#fff;border-color:#a93226}
+.A-light .hitl .hh{color:#a93226}
+.A-light .hitl .diff{background:#fbeeea}
+.A-light .hitl .diff .add{color:#5a7a5a}
+.A-light .hitl .acts .b.app{background:#a93226;color:#fff;border-color:#a93226}
+.A-light .hitl .acts .b.gh{background:transparent;color:#666;border-color:#ccc}
+.A-dark{background:#1a1a1a;color:#e8e4dc}
+.A-dark .mh{background:#222;color:#888}
+.A-dark .palette .sw{color:#aaa}
+.A-dark .cmp{background:rgba(255,255,255,.04)}
+.A-dark .btn.primary{background:#e8e4dc;color:#1a1a1a;border-color:#e8e4dc}
+.A-dark .btn.ghost{background:transparent;color:#e8e4dc;border-color:#444}
+.A-dark .card{background:#222;border-color:#333}
+.A-dark .card .av{background:#e8e4dc;color:#1a1a1a}
+.A-dark .input{background:#222;border-color:#333;color:#777}
+.A-dark .bubble.me{background:#e8e4dc;color:#1a1a1a}
+.A-dark .bubble.ai{background:#222;color:#e8e4dc}
+.A-dark .hitl{background:#222;border-color:#c47a5a}
+.A-dark .hitl .hh{color:#c47a5a}
+.A-dark .hitl .diff{background:#2a1a1a}
+.A-dark .hitl .diff .add{color:#8aaa6a}
+.A-dark .hitl .acts .b.app{background:#c47a5a;color:#1a1a1a;border-color:#c47a5a}
+.A-dark .hitl .acts .b.gh{background:transparent;color:#999;border-color:#444}
+.A-light .editor-line .noun{color:#a93226}.A-dark .editor-line .noun{color:#c47a5a}
+.A-light .editor-line .adj{color:#5a7a5a}.A-dark .editor-line .adj{color:#8aaa6a}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Design Direction — deep exploration</h1>
+  <p>Research-informed (iA Writer, Bear, Ulysses — Apple Design Award writing apps). Mỗi hướng có <strong>light + dark</strong>, palette, typography, motion, <strong>nhiều component thật</strong> (button, card, input, editor line với syntax highlight + focus, chat bubble, HITL card). KHÔNG phải design cuối — là style tile để chọn hướng.</p>
+  <div class="principles">
+    <div class="pr"><div class="h">① Minimal</div><div class="d">Bỏ hết chrome không cần. Writing là chính. (iA Writer: "no buttons, no popups")</div></div>
+    <div class="pr"><div class="h">② Typography-first</div><div class="d">Font là linh hồn. Curated/bespoke, không default.</div></div>
+    <div class="pr"><div class="h">③ Focus mode</div><div class="d">Fade non-active, highlight câu hiện tại. Flow state.</div></div>
+    <div class="pr"><div class="h">④ Light + Dark</div><div class="d">Tác giả viết ngày + đêm. Both bắt buộc.</div></div>
+    <div class="pr"><div class="h">⑤ Calm/Cozy</div><div class="d">"Calm but inviting" (iA), "cozy space" (Bear). Không flashy.</div></div>
+    <div class="pr"><div class="h">⑥ Subtle color</div><div class="d">Màu cho syntax/focus/accent — không trang trí.</div></div>
+    <div class="pr"><div class="h">⑦ Raw elegance</div><div class="d">"Sharp knife" — pure, nothing decorative.</div></div>
+    <div class="pr"><div class="h">⑧ Whitespace</div><div class="d">Thở. Sách đẹp có linh hồn vì có khoảng.</div></div>
+  </div>
+</div>
+
+<div class="dir">
+  <div class="dh"><span class="dn">A · Raw Elegance</span><span class="dline">— iA Writer lineage · minimal · typewriter</span> <span style="background:#a93226;color:#fff;font-size:10px;padding:3px 10px;border-radius:10px;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:1px;vertical-align:middle">✓ CHOSEN</span></div>
+  <div class="ddesc"><strong>Cảm giác:</strong> "Con dao sắc" — thuần khiết, không trang trí, typography là chính. Paper trắng / ink đen, 1 accent duy nhất (đỏ son light, terracotta dark). Cho tác giả thích focus tuyệt đối, cảm giác máy chữ. <strong>Inspiration:</strong> iA Writer, New Yorker, sách serio.</div>
+  <div class="modes">
+    <div class="mode A-light">
+      <div class="mh"><span>☀ Day · paper</span><span>#fbfaf6 / #1a1a1a</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#fbfaf6">paper</div>
+          <div class="sw" style="background:#1a1a1a;color:#fbfaf6">ink</div>
+          <div class="sw" style="background:#a93226;color:#fff">vermilion</div>
+          <div class="sw" style="background:#5a7a5a;color:#fff">sage</div>
+          <div class="sw" style="background:#888;color:#fff">muted</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Newsreader',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Newsreader',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Newsreader (body+display) · Inter (UI) · JetBrains Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>cursor blink · fade focus (câu hiện tại highlight, rest opacity 35%) · không transition flashy</div>
+        <div class="inspo"><b>Inspiration</b> · iA Writer (raw elegance, focus mode, syntax highlight) · New Yorker typography · typewriter calm</div>
+      </div>
+    </div>
+    <div class="mode A-dark">
+      <div class="mh"><span>☾ Night · ink</span><span>#1a1a1a / #e8e4dc</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#1a1a1a;color:#aaa">ink</div>
+          <div class="sw" style="background:#e8e4dc">cream</div>
+          <div class="sw" style="background:#c47a5a">terracotta</div>
+          <div class="sw" style="background:#8aaa6a">sage-lit</div>
+          <div class="sw" style="background:#555">muted</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Newsreader',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Newsreader',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Newsreader · Inter · JetBrains Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>cursor blink · fade focus · blue cursor (iA Writer "blue cursor blinking triggers desire to write")</div>
+        <div class="inspo"><b>Inspiration</b> · iA Writer dark + focus · "evening writing session, dark appearance, focus sentence" (user quote)</div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+/* Direction B: Cozy Study — Bear lineage */
+.B-light{background:#f5ede0;color:#2a2018}
+.B-light .mh{background:#efe5d3;color:#8a7a60}
+.B-light .palette .sw{color:#5a4a30}
+.B-light .cmp{background:rgba(160,104,64,.06)}
+.B-light .btn.primary{background:#a06840;color:#fff;border-color:#a06840}
+.B-light .btn.ghost{background:transparent;color:#a06840;border-color:#d4b894}
+.B-light .card{background:#fbf5e8;border-color:#e0d4b8}
+.B-light .card .av{background:linear-gradient(135deg,#a06840,#d4a574);color:#fff}
+.B-light .input{background:#fbf5e8;border-color:#e0d4b8;color:#8a7a60}
+.B-light .bubble.me{background:#a06840;color:#fff}
+.B-light .bubble.ai{background:#efe5d3;color:#2a2018}
+.B-light .hitl{background:#fbf5e8;border-color:#a06840}
+.B-light .hitl .hh{color:#a06840}
+.B-light .hitl .diff{background:#f0e6d0}
+.B-light .hitl .diff .add{color:#6a8a4a}
+.B-light .hitl .acts .b.app{background:#a06840;color:#fff;border-color:#a06840}
+.B-light .hitl .acts .b.gh{background:transparent;color:#8a7a60;border-color:#d4b894}
+.B-light .editor-line .noun{color:#a06840}.B-light .editor-line .adj{color:#6a8a4a}
+.B-light .editor-line .focus{background:rgba(160,104,64,.1)}
+.B-dark{background:#2a2218;color:#ede2cc}
+.B-dark .mh{background:#332a1f;color:#9a8a70}
+.B-dark .palette .sw{color:#c8b894}
+.B-dark .cmp{background:rgba(212,165,116,.06)}
+.B-dark .btn.primary{background:#d4a574;color:#2a2218;border-color:#d4a574}
+.B-dark .btn.ghost{background:transparent;color:#d4a574;border-color:#5a4a30}
+.B-dark .card{background:#332a1f;border-color:#4a3a25}
+.B-dark .card .av{background:linear-gradient(135deg,#d4a574,#a06840);color:#2a2218}
+.B-dark .input{background:#332a1f;border-color:#4a3a25;color:#9a8a70}
+.B-dark .bubble.me{background:#d4a574;color:#2a2218}
+.B-dark .bubble.ai{background:#332a1f;color:#ede2cc}
+.B-dark .hitl{background:#332a1f;border-color:#d4a574}
+.B-dark .hitl .hh{color:#d4a574}
+.B-dark .hitl .diff{background:#3a2e1f}
+.B-dark .hitl .diff .add{color:#aac878}
+.B-dark .hitl .acts .b.app{background:#d4a574;color:#2a2218;border-color:#d4a574}
+.B-dark .hitl .acts .b.gh{background:transparent;color:#9a8a70;border-color:#5a4a30}
+.B-dark .editor-line .noun{color:#d4a574}.B-dark .editor-line .adj{color:#aac878}
+.B-dark .editor-line .focus{background:rgba(212,165,116,.12)}
+
+/* Direction C: Ink & Moon — literary dusk */
+.C-light{background:#f0f0e8;color:#1c2030}
+.C-light .mh{background:#e6e6dc;color:#7a8090}
+.C-light .palette .sw{color:#4a5060}
+.C-light .cmp{background:rgba(90,122,138,.06)}
+.C-light .btn.primary{background:#1c2030;color:#f0f0e8;border-color:#1c2030}
+.C-light .btn.ghost{background:transparent;color:#5a7a8a;border-color:#b8bcc4}
+.C-light .card{background:#fff;border-color:#dada d0}
+.C-light .card{border-color:#dadad0}
+.C-light .card .av{background:linear-gradient(135deg,#5a7a8a,#7ab0c4);color:#fff}
+.C-light .input{background:#fff;border-color:#dadad0;color:#7a8090}
+.C-light .bubble.me{background:#1c2030;color:#f0f0e8}
+.C-light .bubble.ai{background:#e6e6dc;color:#1c2030}
+.C-light .hitl{background:#fff;border-color:#5a7a8a}
+.C-light .hitl .hh{color:#5a7a8a}
+.C-light .hitl .diff{background:#eaf0f2}
+.C-light .hitl .diff .add{color:#5a8a6a}
+.C-light .hitl .acts .b.app{background:#5a7a8a;color:#fff;border-color:#5a7a8a}
+.C-light .hitl .acts .b.gh{background:transparent;color:#7a8090;border-color:#b8bcc4}
+.C-light .editor-line .noun{color:#5a7a8a}.C-light .editor-line .adj{color:#5a8a6a}
+.C-light .editor-line .focus{background:rgba(90,122,138,.1)}
+.C-dark{background:#1c2030;color:#d8dae0}
+.C-dark .mh{background:#252a3a;color:#6a7080}
+.C-dark .palette .sw{color:#a8b0bc}
+.C-dark .cmp{background:rgba(122,176,196,.05)}
+.C-dark .btn.primary{background:#d8dae0;color:#1c2030;border-color:#d8dae0}
+.C-dark .btn.ghost{background:transparent;color:#7ab0c4;border-color:#3a4050}
+.C-dark .card{background:#252a3a;border-color:#353a4a}
+.C-dark .card .av{background:linear-gradient(135deg,#7ab0c4,#5a7a8a);color:#1c2030}
+.C-dark .input{background:#252a3a;border-color:#353a4a;color:#6a7080}
+.C-dark .bubble.me{background:#d8dae0;color:#1c2030}
+.C-dark .bubble.ai{background:#252a3a;color:#d8dae0}
+.C-dark .hitl{background:#252a3a;border-color:#7ab0c4}
+.C-dark .hitl .hh{color:#7ab0c4}
+.C-dark .hitl .diff{background:#2a3040}
+.C-dark .hitl .diff .add{color:#8acc8a}
+.C-dark .hitl .acts .b.app{background:#7ab0c4;color:#1c2030;border-color:#7ab0c4}
+.C-dark .hitl .acts .b.gh{background:transparent;color:#6a7080;border-color:#3a4050}
+.C-dark .editor-line .noun{color:#7ab0c4}.C-dark .editor-line .adj{color:#8acc8a}
+.C-dark .editor-line .focus{background:rgba(122,176,196,.12)}
+
+.compare{max-width:1100px;margin:0 auto;padding:40px 48px}
+.compare h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;margin-bottom:14px}
+.compare table{width:100%;border-collapse:collapse;font-size:13px}
+.compare th,.compare td{padding:10px 12px;text-align:left;border-bottom:1px solid #e2dfd6;vertical-align:top}
+.compare th{background:#f3f1ea;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666}
+.compare td b{color:#222}
+.recommend{max-width:1100px;margin:0 auto;padding:30px 48px 60px;background:#fdf5f3;border-top:1px solid #e2dfd6}
+.recommend h2{font-family:'Cormorant Garamond',serif;font-size:26px;color:#a93226;margin-bottom:10px}
+.recommend p{font-size:14px;color:#444;line-height:1.7;margin-bottom:8px;max-width:780px}
+.recommend .lean{display:inline-block;padding:6px 14px;background:#a93226;color:#fff;border-radius:20px;font-size:12px;font-weight:500;margin-top:8px}
+</style>
+<div class="dir">
+  <div class="dh"><span class="dn">B · Cozy Study</span><span class="dline">— Bear lineage · warm · cozy · layered</span></div>
+  <div class="ddesc"><strong>Cảm giác:</strong> "Chiếc ghế bành bên lò sưởi" — ấm, mời gọi, có chiều sâu (layered). Cream/cocoa, accent walnut/honey. Cho tác giả thích sự ấm cúng, viết giờ dài, cảm giác phòng đọc. <strong>Inspiration:</strong> Bear (cozy themes), thư viện cổ, giấy lụa.</div>
+  <div class="modes">
+    <div class="mode B-light">
+      <div class="mh"><span>☀ Day · cream</span><span>#f5ede0 / #2a2018</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#f5ede0">cream</div>
+          <div class="sw" style="background:#2a2018;color:#f5ede0">cocoa-ink</div>
+          <div class="sw" style="background:#a06840;color:#fff">walnut</div>
+          <div class="sw" style="background:#d4a574">honey</div>
+          <div class="sw" style="background:#6a8a4a;color:#fff">moss</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Lora',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Lora',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Lora (body+display, ấm) · Inter (UI) · JetBrains Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>soft fades · breathing (subtle scale) · page-turn curl · ấm không lạnh</div>
+        <div class="inspo"><b>Inspiration</b> · Bear (cozy themes, "polished minimal stays out of way") · library armchair · aged paper warmth</div>
+      </div>
+    </div>
+    <div class="mode B-dark">
+      <div class="mh"><span>☾ Night · cocoa</span><span>#2a2218 / #ede2cc</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#2a2218;color:#c8b894">cocoa</div>
+          <div class="sw" style="background:#ede2cc">parchment</div>
+          <div class="sw" style="background:#d4a574">honey</div>
+          <div class="sw" style="background:#a06840;color:#fff">walnut</div>
+          <div class="sw" style="background:#aac878">moss-lit</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Lora',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Lora',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Lora · Inter · JetBrains Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>soft fades · breathing · warm glow on focus (như đèn bàn)</div>
+        <div class="inspo"><b>Inspiration</b> · Bear dark themes · "cozy space to work" · evening lamp</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dir">
+  <div class="dh"><span class="dn">C · Ink & Moon</span><span class="dline">— literary dusk · atmospheric · poetic</span></div>
+  <div class="ddesc"><strong>Cảm giác:</strong> "Viết dưới ánh trăng, mực loan trên giấy" — trầm, suy tưởng, thơ. Moonlit paper / ink night, accent slate-blue / moonlit jade. Cho tác giả thích viết đêm, cảm giác cô đọng, thiền. <strong>Inspiration:</strong> ink-wash painting, Man'yōshū, moonlit study.</div>
+  <div class="modes">
+    <div class="mode C-light">
+      <div class="mh"><span>☀ Day · moonlit paper</span><span>#f0f0e8 / #1c2030</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#f0f0e8">moon-paper</div>
+          <div class="sw" style="background:#1c2030;color:#f0f0e8">ink-blue</div>
+          <div class="sw" style="background:#5a7a8a;color:#fff">slate</div>
+          <div class="sw" style="background:#7ab0c4">moonlit jade</div>
+          <div class="sw" style="background:#5a8a6a;color:#fff">moss</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Cormorant Garamond',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Crimson Pro',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Cormorant Garamond (display, bay) · Crimson Pro (body) · Inter · Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>mực lan (ink spread) · moonlight shift · whisper-quiet transitions</div>
+        <div class="inspo"><b>Inspiration</b> · ink-wash painting (sumi-e) · Man'yōshū poetry · moonlit study · contemplative calm</div>
+      </div>
+    </div>
+    <div class="mode C-dark">
+      <div class="mh"><span>☾ Night · ink night</span><span>#1c2030 / #d8dae0</span></div>
+      <div class="body">
+        <div class="palette">
+          <div class="sw" style="background:#1c2030;color:#a8b0bc">ink-night</div>
+          <div class="sw" style="background:#d8dae0">moonlight</div>
+          <div class="sw" style="background:#7ab0c4">moonlit jade</div>
+          <div class="sw" style="background:#5a7a8a;color:#fff">slate</div>
+          <div class="sw" style="background:#8acc8a">moss-lit</div>
+        </div>
+        <div class="type-sample"><div class="ts-d" style="font-family:'Cormorant Garamond',serif">Tháp Aether</div><div class="ts-b" style="font-family:'Crimson Pro',serif">Elena đứng trước tháp, ngửa mặt lên.</div><div class="ts-m">Cormorant Garamond · Crimson Pro · Inter · Mono</div></div>
+        <div class="components">
+          <div><span class="btn primary">duyệt</span><span class="btn ghost">từ chối</span></div>
+          <div class="card"><div class="av">E</div><div class="ci"><div class="nm">Elena Voss</div><div class="sm">27 · bất tín → tin</div></div></div>
+          <div class="input">viết tiếp câu chuyện...</div>
+          <div class="editor-line"><span class="fade">Cô nhớ lời Marcus:</span> <span class="focus">"đừng vào tháp."</span> <span class="noun">Elena</span> <span class="fade">đã</span> <span class="adj">mệt mỏi</span> <span class="fade">chờ đợi.</span></div>
+          <div class="chat"><div class="bubble me">đoạn mở ổn không?</div><div class="bubble ai">mâu thuẫn arc — đề xuất làm mềm.</div></div>
+          <div class="hitl"><div class="hh">⚡ đề xuất sửa · cần duyệt</div><div class="diff"><span class="del">cô bước vào.</span> → <span class="add">cô giơ tay, rồi dừng.</span></div><div class="acts"><span class="b app">duyệt</span><span class="b gh">từ chối</span></div></div>
+        </div>
+        <div class="motion"><div class="ml">Motion</div>ink spread · moon-shift gradient · "writing by moonlight" contemplative</div>
+        <div class="inspo"><b>Inspiration</b> · moonlit ink-wash · night-calligraphy · poetic dusk</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="compare">
+  <h2>So sánh 3 hướng</h2>
+  <table>
+    <tr><th>Tiêu chí</th><th>A · Raw Elegance</th><th>B · Cozy Study</th><th>C · Ink & Moon</th></tr>
+    <tr><td><b>Cảm giác</b></td><td>Thuần, sắc, focus tuyệt đối</td><td>Ấm, mời gọi, phòng đọc</td><td>Trầm, thơ, suy tưởng</td></tr>
+    <tr><td><b>Minimalism</b></td><td>Cao nhất (iA Writer)</td><td>Trung (layered ấm)</td><td>Trung (atmospheric)</td></tr>
+    <tr><td><b>Typography</b></td><td>Newsreader (serif, rõ)</td><td>Lora (serif, ấm)</td><td>Cormorant + Crimson (bay)</td></tr>
+    <tr><td><b>Color</b></td><td>1 accent (vermilion/terracotta)</td><td>Walnut/honey (ấm)</td><td>Slate/jade (trầm)</td></tr>
+    <tr><td><b>Light</b></td><td>Paper trắng #fbfaf6</td><td>Cream #f5ede0</td><td>Moon-paper #f0f0e8</td></tr>
+    <tr><td><b>Dark</b></td><td>Ink đen #1a1a1a</td><td>Cocoa #2a2218</td><td>Ink-night #1c2030</td></tr>
+    <tr><td><b>Hợp tác giả</b></td><td>Focus tuyệt đối, viết serio</td><td>Viết giờ dài, ấm cúng</td><td>Viết đêm, thiền, thơ</td></tr>
+    <tr><td><b>Khác biệt</b></td><td>Đậm nhất, có "linh hồn"</td><td>Quen thuộc, dễ thương</td><td>Độc đáo, thơ nhưng risk</td></tr>
+    <tr><td><b>Risk</b></td><td>Thấp (proven iA Writer)</td><td>Thấp (proven Bear)</td><td>Trung (độc đáo = risk)</td></tr>
+  </table>
+</div>
+
+<div class="recommend">
+  <h2>✓ Decision LOCKED — A · Raw Elegance</h2>
+  <p>User approved 2026-07-07. Lý do chọn A (record):</p>
+  <p>① <strong>Thesis VateSpira = "harness cho tác giả nghiêm túc."</strong> Raw Elegance (iA Writer lineage) truyền tải "nghiêm túc, focus, công cụ sắc" — đúng vị trí sản phẩm.</p>
+  <p>② <strong>iA Writer = gold standard, Apple Design Award.</strong> Pattern proven: minimal + typography-first + focus mode + light/dark.</p>
+  <p>③ <strong>Typography Newsreader</strong> (Google Fonts, free, italic đẹp) — editorial/serio, không bespoke budget.</p>
+  <p>④ <strong>1 accent (vermilion/terracotta)</strong> = maintain đơn giản + đủ distinctive.</p>
+  <p style="margin-top:12px"><strong>B · Cozy Study</strong> và <strong>C · Ink & Moon</strong>: considered, not chosen (B casual hơn thesis, C độc đáo nhưng risk). Giữ làm record.</p>
+  <span class="lean" style="background:#5a7a5a">✓ Chosen: A · Raw Elegance (light + dark)</span>
+  <p style="margin-top:14px;font-size:12px;color:#888">Hi-fi mockup (A applied): <a href="wireframes/writing-hifi.html">writing-hifi.html</a> · Style tile reference: file này.</p>
+</div>

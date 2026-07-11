@@ -1,0 +1,18 @@
+# Backend
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Frontend
+node_modules/
+.next/
+out/
+
+# General
+.DS_Store
+*.log
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VateSpira — Architecture (Technical)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf7;--surface:#fff;--surface-2:#f3f1ea;--ink:#1a1a1a;--ink-2:#3d3d3d;--muted:#6b6b6b;--line:#e2dfd6;--accent:#a93226;--accent-2:#c14a3d;--gold:#9a7b3a;--sage:#5a7a5a;--sky:#3a6a9a;--sans:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;--display:'Cormorant Garamond',serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:60px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:15px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{position:fixed;top:0;left:0;width:248px;height:100vh;background:var(--surface);border-right:1px solid var(--line);padding:24px 0;overflow-y:auto;z-index:100}
+.nav .brand{font-family:var(--display);font-size:20px;color:var(--accent);padding:0 22px 4px;font-weight:600}
+.nav .tag{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:0 22px 18px;font-weight:600}
+.nav a{display:block;padding:7px 22px;color:var(--ink-2);font-size:13px;border-left:2px solid transparent}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a.active{color:var(--accent);border-left-color:var(--accent);background:var(--surface-2);font-weight:500}
+.nav .grp{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:16px 22px 4px;font-weight:600}
+.main{margin-left:248px;padding:0 56px;max-width:880px}
+header{padding:56px 0 32px;border-bottom:2px solid var(--ink)}
+header h1{font-family:var(--display);font-size:40px;font-weight:600;letter-spacing:.5px}
+header .sub{color:var(--muted);font-size:15px;margin-top:6px}
+header .meta{display:flex;gap:14px;margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+header .meta span{padding:3px 10px;background:var(--surface-2);border:1px solid var(--line);border-radius:3px}
+section{padding:40px 0;border-bottom:1px solid var(--line)}
+h2{font-size:22px;font-weight:600;margin-bottom:6px;display:flex;align-items:baseline;gap:10px}
+h2 .n{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:500}
+h3{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--ink)}
+p{margin:8px 0;color:var(--ink-2)}
+ul,ol{margin:8px 0 8px 22px}
+li{margin-bottom:4px;color:var(--ink-2)}
+code{font-family:var(--mono);font-size:13px;background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:14px;overflow-x:auto;margin:10px 0}
+pre code{background:none;padding:0;color:var(--ink);font-size:12.5px;line-height:1.5}
+strong{color:var(--ink);font-weight:600}
+em{color:var(--accent)}
+/* callout */
+.callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:12px 16px;margin:12px 0;font-size:13.5px}
+.callout.accent{border-left-color:var(--accent)}
+.callout .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);font-weight:700;margin-bottom:4px}
+.callout.accent .lbl{color:var(--accent)}
+/* tables */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink)}
+td code{font-size:12px}
+/* diagrams */
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:20px;margin:12px 0;font-family:var(--mono);font-size:12px;white-space:pre;overflow-x:auto;color:var(--ink-2)}
+.stack{display:flex;flex-direction:column;align-items:center;gap:4px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:5px;margin:12px 0}
+.stack .node{padding:10px 24px;border-radius:4px;text-align:center;min-width:260px;border:2px solid}
+.stack .n{font-weight:600;font-size:14px}
+.stack .d{font-size:11px;color:var(--muted);margin-top:2px}
+.stack .rel{font-size:10px;color:var(--accent);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.stack .arr{color:var(--muted)}
+.sn-lg{background:#eaf0e6;border-color:var(--sage)}
+.sn-da{background:#fbeeea;border-color:var(--accent)}
+.sn-ls{background:#f3eedc;border-color:var(--gold)}
+/* layers */
+.layers{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.lyr{border:1px solid var(--line);border-radius:5px;padding:14px 18px;border-left:3px solid}
+.lyr .lh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.lyr .lt{font-weight:600;font-size:14px}
+.lyr .ltag{font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:8px;font-weight:600}
+.lyr-3{border-left-color:var(--gold);background:#fdf9ee}.lyr-3 .ltag{background:var(--gold);color:#fff}
+.lyr-2{border-left-color:var(--accent);background:#fdf5f3}.lyr-2 .ltag{background:var(--accent);color:#fff}
+.lyr-1{border-left-color:var(--sage);background:#f3f7f0}.lyr-1 .ltag{background:var(--sage);color:#fff}
+.lyr .ldesc{font-size:13px;color:var(--ink-2);margin-top:4px}
+.lyr ul{margin:6px 0 0 18px}.lyr li{font-size:12.5px}
+/* ERD */
+.erd{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.ent{background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden;font-size:12px}
+.ent .et{background:var(--surface-2);padding:6px 10px;font-family:var(--mono);font-weight:600;color:var(--accent);border-bottom:1px solid var(--line)}
+.ent .ef{padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.7}
+.ent .pk{color:var(--accent)}.ent .fk{color:var(--sky)}
+/* ADR */
+.adr{background:var(--surface);border:1px solid var(--line);border-radius:4px;margin:10px 0;padding:14px 18px}
+.adr .ah{font-weight:600;font-size:14px;margin-bottom:6px}
+.adr .ah .id{font-family:var(--mono);font-size:11px;color:var(--accent);background:var(--surface-2);padding:2px 7px;border-radius:3px;margin-right:8px}
+.adr .ar{font-size:13px;color:var(--ink-2);margin:3px 0}
+.adr .ar .l{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;margin-right:6px}
+/* AC */
+.ac{display:flex;gap:10px;align-items:flex-start;margin:6px 0;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:4px;font-size:13px}
+.ac .b{font-size:9px;padding:2px 7px;border-radius:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.b-ubi{background:#e8eef5;color:var(--sky)}.b-state{background:#f5ecd8;color:var(--gold)}.b-event{background:#e8f0e8;color:var(--sage)}.b-unwant{background:#f5e0e0;color:var(--accent)}.b-opt{background:#eee;color:var(--muted)}
+/* glossary */
+.gl{display:grid;grid-template-columns:1fr;gap:6px;margin:12px 0}
+.gi{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 14px;font-size:13px}
+.gi .gt{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600}
+.gi .gd{color:var(--ink-2);margin-top:2px}
+.foot{padding:32px 0 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:0 20px}.erd{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="brand">VateSpira</div>
+  <div class="tag">architecture · technical</div>
+  <div class="grp">Overview</div>
+  <a href="#s1">1. Context & Goals</a>
+  <a href="#s2">2. Architecture (C4)</a>
+  <a href="#s3">3. Data Model (ERD)</a>
+  <div class="grp">Spec</div>
+  <a href="#s4">4. User Flows</a>
+  <a href="#s5">5. ADRs</a>
+  <a href="#s6">6. EARS AC</a>
+  <a href="#s7">7. API Contracts</a>
+  <a href="#s8">8. UI Design</a>
+  <div class="grp">Ops</div>
+  <a href="#s9">9. Non-Functional</a>
+  <a href="#s10">10. Deployment</a>
+  <div class="grp">Ref</div>
+  <a href="#gloss">Glossary</a>
+</nav>
+<div class="main">
+<header>
+  <h1>VateSpira — Architecture</h1>
+  <div class="sub">Harness agent cho tác giả tiểu thuyết · technical spec for developers</div>
+  <div class="meta"><span>✅ Approved</span><span>📅 2026-07-07</span><span>🧱 deepagents · Next.js 16 · Supabase · LangSmith</span><span>🖼 <a href="wireframes/wireframes-deck.html">wireframes</a> · <a href="wireframes/writing-hifi.html">hi-fi</a></span></div>
+</header>
+
+<section id="s1">
+  <h2><span class="n">01</span>Context & Goals</h2>
+  <h3>Problem</h3>
+  <p>Tác giả tiểu thuyết cần công cụ hỗ trợ toàn hành trình sáng tác (ý tưởng → dàn ý → chương → kiểm tra). Tool hiện có (NovelCrafter, Sudowrite) giải từng mảnh, không có <strong>harness agent</strong> — agent tự chủ thao tác trên project tiểu thuyết qua tools + codex-as-context, giống Claude Code thao tác trên codebase.</p>
+  <div class="callout"><div class="lbl">💡 harness là gì?</div>Một "bộ khung" cho agent: vòng lặp + tools + context management + HITL. Agent chạy TRONG harness. Xem <a href="#gloss">Glossary</a>.</div>
+  <h3>Goals (MVP "Harness-Proving Foundation")</h3>
+  <table>
+    <tr><th>ID</th><th>Goal</th><th>Mô tả</th></tr>
+    <tr><td>G1</td><td>Harness core</td><td>Agent (deepagents) chat-centric, HITL approval trước khi sửa manuscript</td></tr>
+    <tr><td>G2</td><td>Codex structured</td><td>characters/timeline/lore trong Postgres — dual consumer: agent (@tools) + UI (rich views)</td></tr>
+    <tr><td>G3</td><td>Manuscript = files</td><td>Markdown trong StoreBackend, agent dùng built-in file tools</td></tr>
+    <tr><td>G4</td><td>Runtime eval</td><td>RubricMiddleware + 1-2 novel rubrics → agent tự self-eval & sửa mỗi turn</td></tr>
+    <tr><td>G5</td><td>Offline eval</td><td>Minimal suite (3-5 scenarios) → measure harness quality, regression check</td></tr>
+    <tr><td>G6</td><td>Literary UI</td><td>Design "văn chương, bay lượn" — RIÊNG, phù hợp tác giả (không template/đại trà)</td></tr>
+    <tr><td>G7</td><td>BYOK + Hybrid</td><td>Free hosted + Pro + BYOK unlimited</td></tr>
+    <tr><td>G8</td><td>Multilingual</td><td>UI i18n + skill content đa ngữ</td></tr>
+  </table>
+  <h3>Non-goals (MVP)</h3>
+  <ul>
+    <li><strong>P2:</strong> multi-tab subagents, timeline chart, skills library đầy đủ, cross-session memory</li>
+    <li><strong>P3:</strong> collaboration, full pipeline automation, local-first</li>
+    <li><strong>Skip:</strong> Ollama local full, full monetization tier matrix</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2><span class="n">02</span>Architecture (C4)</h2>
+  <h3>L1 — System Context</h3>
+  <div class="diagram">[Author] ──► [VateSpira Web App]
+                    │
+       ┌────────────┼────────────┬─────────────┐
+       ▼            ▼            ▼             ▼
+  [AI Providers] [Supabase]  [LangSmith]   [Vercel]
+  (BYOK)         (DB/Auth)   (agent runtime) (FE host)</div>
+  <h3>L2 — LangStack: deepagents / LangGraph / LangSmith</h3>
+  <div class="callout accent"><div class="lbl">⚠ Quan hệ đúng (3 thứ KHÔNG lồng nhau)</div>
+  <strong>LangGraph</strong> = runtime (engine). <strong>deepagents</strong> = harness chạy TRÊN LangGraph. <strong>LangSmith</strong> = dịch vụ DEPLOY + GIÁM SÁT, ở NGOÀI stack runtime. <em>Không phải</em> "deepagents chứa langsmith chứa langgraph".</div>
+  <div class="stack">
+    <div class="node sn-ls"><div class="n">LangSmith</div><div class="d">deploy + tracing + eval (ở ngoài)</div></div>
+    <div class="rel">host · observe · eval ▼</div>
+    <div class="node sn-da"><div class="n">deepagents</div><div class="d">harness (filesystem/subagents/skills/HITL)</div></div>
+    <div class="rel">chạy trên ▼</div>
+    <div class="node sn-lg"><div class="n">LangGraph</div><div class="d">runtime (state · stream · checkpoint)</div></div>
+  </div>
+  <h3>L2 — 3 Layers (VateSpira architecture)</h3>
+  <div class="layers">
+    <div class="lyr lyr-3"><div class="lh"><span class="lt">Lớp 3 · Eval & Improvement</span><span class="ltag">BUILD</span></div>
+      <div class="ldesc">Đo + cải thiện harness có chứng cứ.</div>
+      <ul><li><strong>RubricMiddleware</strong> + novel rubrics (runtime self-eval)</li><li><strong>Offline eval suite</strong> (adapt deepagents-evals, 3-5 scenarios)</li><li>LangSmith tracing → weak criteria → improve → re-eval loop</li></ul>
+    </div>
+    <div class="lyr lyr-2"><div class="lh"><span class="lt">Lớp 2 · Novel-Harness</span><span class="ltag">BUILD ON TOP</span></div>
+      <div class="ldesc">Dạy engine hiểu "tiểu thuyết".</div>
+      <ul><li>Custom <code>@tools</code>: codex CRUD, check_consistency, pacing, portfolio</li><li>Custom <code>SKILL.md</code>: trope-catalog, prose, scene-crafting</li><li>Custom <code>AGENTS.md</code>: novel bible + author prefs</li><li>Manuscript=files · Codex=structured · HITL permissions</li></ul>
+    </div>
+    <div class="lyr lyr-1"><div class="lh"><span class="lt">Lớp 1 · Foundation</span><span class="ltag">CONSUME</span></div>
+      <div class="ldesc">deepagents — mua sẵn, không build.</div>
+      <ul><li>agent loop · context mgmt · summarization · subagents · HITL</li><li>filesystem tools · StoreBackend · LangGraph runtime · BYOK</li></ul>
+    </div>
+  </div>
+  <h3>Containers</h3>
+  <table>
+    <tr><th>Container</th><th>Tech</th><th>Vai trò</th></tr>
+    <tr><td>FE</td><td>Next.js 16 (App Router) + React 19.2 + TipTap + Tailwind v4</td><td>UI/SSR/routing, chat, codex views, editor</td></tr>
+    <tr><td>BE</td><td>FastAPI + deepagents + LangGraph</td><td>Agent harness + domain logic + codex service</td></tr>
+    <tr><td>DB</td><td>Supabase (Postgres + Auth + Storage)</td><td>codex tables + StoreBackend + checkpoints, JWT, assets</td></tr>
+    <tr><td>Runtime</td><td>LangSmith (LangGraph Platform)</td><td>agent deploy + streaming + tracing + eval</td></tr>
+    <tr><td>AI</td><td>OpenAI/Anthropic/Google/DeepSeek/ZAI/OpenRouter/Ollama</td><td>LLM inference (BYOK)</td></tr>
+  </table>
+</section>
+
+<section id="s3">
+  <h2><span class="n">03</span>Data Model (ERD)</h2>
+  <div class="callout"><div class="lbl">💡 Hybrid: 2 kiểu dữ liệu, 2 cách lưu</div>
+  <strong>Bản thảo</strong> (prose) → markdown files (StoreBackend) — agent dùng file tools. <strong>Codex</strong> (structured) → Postgres tables — agent dùng custom @tools + UI render. Lý do: codex cần query + render portfolio/timeline; prose tự nhiên là text liền.</div>
+  <h3>Codex (Postgres, RLS per user+novel)</h3>
+  <div class="erd">
+    <div class="ent"><div class="et">novels</div><div class="ef"><span class="pk">id</span> · user_id · title · language · pov · tense</div></div>
+    <div class="ent"><div class="et">characters</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · name · age · personality · arc · pov · color_theme · portfolio_data JSONB</div></div>
+    <div class="ent"><div class="et">locations</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · name · description · geography</div></div>
+    <div class="ent"><div class="et">timeline_events</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · title · date_label · sort_key · character_ids[]</div></div>
+    <div class="ent"><div class="et">lore</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · category · title · body</div></div>
+    <div class="ent"><div class="et">items</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · name · significance</div></div>
+    <div class="ent"><div class="et">relationships</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · <span class="fk">from_char</span> · <span class="fk">to_char</span> · type</div></div>
+    <div class="ent"><div class="et">chapters</div><div class="ef"><span class="pk">id</span> · <span class="fk">novel_id</span> · number · title · status · word_count <span style="color:var(--muted)">(metadata; prose trong StoreBackend)</span></div></div>
+  </div>
+  <p><strong>Progressions</strong> (codex entry evolves per chapter — VD: Elena ch.1 bất tín → ch.8 tin) — stored trong <code>portfolio_data JSONB</code> hoặc bảng riêng <code>character_progressions(character_id, chapter_id, state)</code>.</p>
+  <h3>Manuscript (StoreBackend files, namespace per user+novel)</h3>
+  <pre><code>/manuscript/chapters/{chapter_id}.md   ← prose (TipTap JSON hoặc markdown)
+/manuscript/outline.md
+/manuscript/notes/*.md
+namespace: (user_id, "novels", novel_id, "manuscript")</code></pre>
+  <h3>Memory · Skills · Agent state</h3>
+  <table>
+    <tr><th>Loại</th><th>Lưu</th><th>Truy cập</th></tr>
+    <tr><td>Memory (novel bible, author prefs)</td><td><code>/memories/*.md</code> (AGENTS.md format)</td><td><code>memory=</code> param (auto-load)</td></tr>
+    <tr><td>Skills (trope, prose, scene)</td><td><code>/skills/*/SKILL.md</code></td><td><code>skills=</code> param (progressive disclosure)</td></tr>
+    <tr><td>Agent state</td><td>LangGraph checkpoints (Postgres)</td><td>checkpointer</td></tr>
+    <tr><td>Eval data</td><td><code>rubric_evaluations</code>, <code>eval_runs</code> tables</td><td>LangSmith + BE API</td></tr>
+  </table>
+</section>
+
+<section id="s4">
+  <h2><span class="n">04</span>User Flows</h2>
+  <div class="callout"><div class="lbl">💡 Research-based (NovelCrafter/Sudowrite)</div>
+  Hành trình tác giả KHÔNG tuyến tính idea→outline→chapter. Là vòng lặp 4 pha: <strong>Planning ↔ Manuscript ↔ Codex ↔ Review</strong>. MVP cắt 1 lát prove thesis.</div>
+  <h3>P1 — MVP (5 flows)</h3>
+  <table>
+    <tr><th>ID</th><th>Flow</th><th>Prove</th></tr>
+    <tr><td>UF-1</td><td><strong>Setup</strong>: tạo novel (title, genre, POV, tense, language) → scaffold manuscript + codex + memory</td><td>onboarding</td></tr>
+    <tr><td>UF-2</td><td><strong>Gieo thế giới</strong>: chat phát triển nhân vật → agent <code>create_character</code> với progressions + relations → UI portfolio auto-render</td><td>codex auto-populate + dual-consumer</td></tr>
+    <tr><td>UF-4</td><td><strong>Viết scene theo Beats</strong>: agent <code>read_file</code> codex+beats+memory → <code>write_file</code> manuscript → HITL approve → RubricMiddleware self-eval → revise</td><td>harness + HITL + rubric</td></tr>
+    <tr><td>UF-6</td><td><strong>Consistency review</strong>: agent <code>check_consistency</code> (query codex vs manuscript) → report plot holes + Appearance Heatmap → suggest fix → HITL</td><td>codex-as-context + consistency</td></tr>
+    <tr><td>UF-8</td><td><strong>Extract from chat</strong>: trong brainstorm, agent detect scene beats / codex entries / outline points → 1-click add</td><td>auto-populate from discussion</td></tr>
+  </table>
+  <h3>P2 / P3</h3>
+  <p><strong>P2:</strong> multi-tab parallel (subagents), Grid/Matrix planning, timeline chart, skills library expand, cross-session memory consolidation. <strong>P3:</strong> collaboration, full pipeline automation, local-first offline.</p>
+</section>
+
+<section id="s5">
+  <h2><span class="n">05</span>ADRs</h2>
+  <div class="callout"><div class="lbl">💡 ADR là gì?</div>
+  Architecture Decision Record — hồ sơ ghi 1 quyết định kiến trúc: Bối cảnh → Lựa chọn → Quyết định → Hệ quả. Lưu lý do để tương lai không hỏi lại "tại sao không dùng X?".</div>
+  <div class="adr"><div class="ah"><span class="id">ADR-001</span>deepagents (Python) làm harness foundation</div>
+    <div class="ar"><span class="l">Context</span>Cần harness engine không build from 0.</div>
+    <div class="ar"><span class="l">Options</span>deepagents.js (1.4k⭐ ít mature) · <strong>deepagents Python</strong> (25.8k⭐, có eval + RubricMiddleware) · Vercel AI SDK · build from 0</div>
+    <div class="ar"><span class="l">Decision</span>deepagents Python.</div>
+    <div class="ar"><span class="l">Consequences</span>+1 service Python BE; agent tools + domain co-located.</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-002</span>Hybrid data model (manuscript files + codex structured)</div>
+    <div class="ar"><span class="l">Context</span>Codex cần render UI + query; manuscript là prose.</div>
+    <div class="ar"><span class="l">Decision</span>Codex = Postgres tables; Manuscript = markdown files (StoreBackend).</div>
+    <div class="ar"><span class="l">Consequences</span>~10 custom @tools codex; built-in file tools manuscript.</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-003</span>Next.js FE + Python FastAPI BE split (Option B)</div>
+    <div class="ar"><span class="l">Context</span>Agent tools + domain logic cùng language tránh duplication.</div>
+    <div class="ar"><span class="l">Decision</span>Next.js (UI/SSR) + Python FastAPI (mọi logic); Supabase (DB/Auth).</div>
+    <div class="ar"><span class="l">Consequences</span>2 service; agent tools gọi domain service trực tiếp (0 hop).</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-004</span>LangSmith Deployment cho agent runtime</div>
+    <div class="ar"><span class="l">Context</span>Cần deploy agent + streaming + tracing + eval hosting.</div>
+    <div class="ar"><span class="l">Decision</span>LangSmith Deployment (<code>langgraph.json</code> + <code>langgraph deploy</code>).</div>
+    <div class="ar"><span class="l">Consequences</span>Managed; FE dùng <code>useStream</code> SSE custom chat UI.</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-005</span>BYOK + Hybrid monetization</div>
+    <div class="ar"><span class="l">Context</span>Tránh gánh token cost; freemium entry.</div>
+    <div class="ar"><span class="l">Decision</span>Free (hosted cap) + Pro sub + BYOK (unlimited, 0 cost). Premium features gate bởi sub bất kể AI source.</div>
+    <div class="ar"><span class="l">Consequences</span>BYOK qua <code>@wrap_model_call</code> đọc <code>runtime.context.model + api_key</code>.</div>
+    <div class="ar"><span class="l">MVP providers</span><strong>Gemini</strong> (<code>langchain-google-genai</code>) · <strong>DeepSeek</strong> (<code>langchain-deepseek</code>, dùng <code>deepseek-chat</code> V3, <em>không</em> <code>deepseek-reasoner</code> R1) · <strong>ZAI/Zhipu</strong> (<code>openrouter:z-ai/glm-5.2</code>).</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-006</span>Eval-driven continuous improvement</div>
+    <div class="ar"><span class="l">Context</span>Harness phải "tốt dần" — đo được → cải thiện có chứng cứ.</div>
+    <div class="ar"><span class="l">Decision</span>2 lớp eval: runtime (RubricMiddleware + novel rubrics) + offline (adapt deepagents-evals). First-class trong MVP.</div>
+    <div class="ar"><span class="l">Consequences</span>Loop: eval → weak criteria → improve Lớp 2 → re-eval → tag version.</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-007</span>Design Direction A · Raw Elegance (iA Writer lineage) — LOCKED</div>
+    <div class="ar"><span class="l">Context</span>User muốn design RIÊNG, phù hợp tác giả. "Game-like" = CẢM HỨNG game có design riêng, KHÔNG clone. Research iA Writer / Bear / Ulysses → minimal + typography-first + focus mode + light/dark.</div>
+    <div class="ar"><span class="l">Decision</span>Direction <strong>A · Raw Elegance</strong>. Light: paper #fbfaf6 / ink #1a1a1a / vermilion #a93226. Dark: ink #1a1a1a / cream #e8e4dc / terracotta #c47a5a. Newsreader (serif) + Inter + JetBrains Mono. Motion: cursor blink, fade focus. 100% custom (no shadcn). Tailwind v4.</div>
+    <div class="ar"><span class="l">Alternatives</span>B · Cozy Study (Bear, Lora, walnut) — casual. C · Ink & Moon (ink-wash, Cormorant, slate) — độc đáo nhưng risk. Xem <a href="design-exploration.html">design-exploration.html</a>.</div>
+    <div class="ar"><span class="l">Consequences</span>iA Writer pattern proven; Newsreader free; 1 accent = maintain đơn giản. Hi-fi: <a href="wireframes/writing-hifi.html">writing-hifi.html</a>.</div></div>
+  <div class="adr"><div class="ah"><span class="id">ADR-008</span>Supabase Postgres + RLS multi-tenant</div>
+    <div class="ar"><span class="l">Context</span>Multi-tenant (user × novel) isolation.</div>
+    <div class="ar"><span class="l">Decision</span>RLS <code>user_id = auth.uid()</code>; StoreBackend namespace <code>(user_id, "novels", novel_id, ...)</code>.</div>
+    <div class="ar"><span class="l">Consequences</span>Isolation built-in; Supabase JWT verify trong Python BE.</div></div>
+</section>
+
+<section id="s6">
+  <h2><span class="n">06</span>EARS AC</h2>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-1</strong> System SHALL expose agent interaction via chat UI with streaming SSE.</div></div>
+  <div class="ac"><span class="b b-state">state</span><div><strong>AC-2</strong> When agent requests manuscript edit, system SHALL pause for user approval (HITL).</div></div>
+  <div class="ac"><span class="b b-event">event</span><div><strong>AC-3</strong> When user sends chat message, agent SHALL access codex (tools), manuscript (file tools), memory, skills.</div></div>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-4</strong> System SHALL store codex in structured Postgres tables with RLS.</div></div>
+  <div class="ac"><span class="b b-state">state</span><div><strong>AC-5</strong> When agent updates codex entity, UI SHALL reflect within 2s.</div></div>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-6</strong> System SHALL render character portfolio with per-character color theme.</div></div>
+  <div class="ac"><span class="b b-unwant">unwanted</span><div><strong>AC-7</strong> System SHALL NOT store codex as unstructured markdown.</div></div>
+  <div class="ac"><span class="b b-event">event</span><div><strong>AC-8</strong> When agent completes chapter turn, RubricMiddleware SHALL eval against chapter rubric.</div></div>
+  <div class="ac"><span class="b b-state">state</span><div><strong>AC-9</strong> If rubric = needs_revision &amp; iter &lt; max, system SHALL inject feedback &amp; resume.</div></div>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-10</strong> Offline eval SHALL run ≥3 scenarios, report category_scores (prose, consistency, pacing, POV).</div></div>
+  <div class="ac"><span class="b b-state">state</span><div><strong>AC-11</strong> When offline eval shows category_score drop &gt;5% vs prior, CI SHALL block prod.</div></div>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-12</strong> System SHALL support UI i18n (≥2 langs) + multilingual skills.</div></div>
+  <div class="ac"><span class="b b-opt">optional</span><div><strong>AC-13</strong> System MAY allow BYOK for unlimited usage.</div></div>
+  <div class="ac"><span class="b b-ubi">ubiquitous</span><div><strong>AC-14</strong> System SHALL gate premium features by subscription regardless of AI source.</div></div>
+</section>
+
+<section id="s7">
+  <h2><span class="n">07</span>API Contracts</h2>
+  <h3>Agent stream (FE → LangSmith → agent)</h3>
+  <pre><code>POST /threads/{thread_id}/runs/stream   (SSE)
+Body: { messages: [{role, content}], context: {model, api_key?, novel_id} }
+Stream modes: messages | values | updates
+Auth: LangSmith API key (server) + Supabase JWT in context (RLS)</code></pre>
+  <h3>Codex CRUD (FE → Python BE)</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Mô tả</th></tr>
+    <tr><td>GET</td><td><code>/novels/{id}/characters</code></td><td>list</td></tr>
+    <tr><td>POST</td><td><code>/novels/{id}/characters</code></td><td>create</td></tr>
+    <tr><td>PATCH</td><td><code>/novels/{id}/characters/{cid}</code></td><td>update</td></tr>
+    <tr><td>DELETE</td><td><code>/novels/{id}/characters/{cid}</code></td><td>204</td></tr>
+    <tr><td>GET</td><td><code>/novels/{id}/timeline</code></td><td>events</td></tr>
+  </table>
+  <p>Tương tự cho locations, lore, items, relationships. Auth: <code>Authorization: Bearer &lt;supabase_jwt&gt;</code>.</p>
+  <h3>Manuscript · Eval</h3>
+  <ul>
+    <li><code>GET/PUT /novels/{id}/manuscript/{path}</code> → StoreBackend (triggers agent context refresh)</li>
+    <li><code>GET /novels/{id}/evaluations</code> · <code>POST /eval/run</code> (admin) · <code>GET /eval/runs/{id}</code></li>
+  </ul>
+  <h3>Error codes</h3>
+  <p><code>401</code> unauthorized · <code>403</code> forbidden (RLS) · <code>404</code> not found · <code>409</code> conflict (concurrent edit) · <code>422</code> validation · <code>429</code> rate limit (free cap)</p>
+</section>
+
+<section id="s8">
+  <h2><span class="n">08</span>UI Design</h2>
+  <div class="callout accent"><div class="lbl">⚠ Wireframe = artifact RIÊNG (cho tác giả), không phải phần của architecture doc</div>
+  Low-fi (6 frame, gray): <a href="wireframes/wireframes-deck.html"><strong>wireframes-deck.html</strong></a> · Hi-fi (Writing view, Direction A): <a href="wireframes/writing-hifi.html"><strong>writing-hifi.html</strong></a></div>
+  <h3>Design direction — A · Raw Elegance (LOCKED, ADR-007)</h3>
+  <table>
+    <tr><th>Aspect</th><th>Direction A</th></tr>
+    <tr><td>Palette Light</td><td>paper #fbfaf6 · surface #fff · ink #1a1a1a · vermilion #a93226 (accent) · sage #5a7a5a · muted #888</td></tr>
+    <tr><td>Palette Dark</td><td>ink #1a1a1a · surface #222 · cream #e8e4dc · terracotta #c47a5a (accent) · sage-lit #8aaa6a · muted #777</td></tr>
+    <tr><td>Typography</td><td>Newsreader (serif body+display, editorial) · Inter (UI) · JetBrains Mono (code)</td></tr>
+    <tr><td>Motion</td><td>cursor blink · fade focus (câu hiện tại highlight, rest 38%) · không bouncy/flashy — iA Writer lineage</td></tr>
+    <tr><td>Principles</td><td>minimal chrome · typography-first · focus mode · whitespace rộng · 100% custom (no shadcn) · light+dark</td></tr>
+    <tr><td>Reference</td><td><a href="design-exploration.html">design-exploration.html</a> (style tile) · <a href="wireframes/writing-hifi.html">writing-hifi.html</a> (hi-fi)</td></tr>
+  </table>
+  <h3>Component tree</h3>
+  <pre><code>App
+├─ Dashboard (novel list, stats)
+└─ NovelWorkspace
+   ├─ Sidebar (chapters, codex nav, status)
+   ├─ EditorPanel (TipTap, manuscript, word count)
+   ├─ ChatPanel (stream, auto-suggest, HITL approval cards)
+   └─ CodexPanel (tabs: Characters | Locations | Timeline | Lore)
+      ├─ CharacterPortfolio (auto-designed, per-character color)
+      ├─ TimelineChart (vis-timeline)
+      └─ RelationshipGraph (d3-force)
+Settings (BYOK, language, theme, subscription)</code></pre>
+  <h3>States</h3>
+  <p>Loading (skeleton + ink-spread) · Empty (illustrated) · Error (retry + agent-suggested fix) · HITL approval (modal: proposed edit + diff + Approve/Reject/Edit)</p>
+</section>
+
+<section id="s9">
+  <h2><span class="n">09</span>Non-Functional</h2>
+  <table>
+    <tr><th>Aspect</th><th>Target</th></tr>
+    <tr><td>Performance</td><td>Chat first-token &lt;1.5s P95 · codex UI update &lt;2s · editor load (100k word) &lt;500ms · offline eval (5 scenarios) &lt;10min</td></tr>
+    <tr><td>Security</td><td>RLS all codex tables · Supabase JWT verify in BE · BYOK keys encrypted (Vault), never logged · HITL on manuscript writes · RubricMiddleware grader treats transcript as untrusted</td></tr>
+    <tr><td>Scale</td><td>MVP: 100 concurrent users, 1k novels · LangSmith runtime scaling · Supabase DB scaling</td></tr>
+    <tr><td>Observability</td><td>LangSmith tracing all runs · rubric_evaluations table · offline eval → LangSmith experiments · FE errors → Sentry · dashboard: harness version → category_scores trend</td></tr>
+  </table>
+</section>
+
+<section id="s10">
+  <h2><span class="n">10</span>Deployment</h2>
+  <h3>Environments</h3>
+  <p><strong>dev:</strong> <code>next dev</code> + <code>langgraph dev</code> + <code>supabase start</code> · <strong>staging:</strong> Vercel preview + LangSmith staging + Supabase staging · <strong>prod:</strong> Vercel + LangSmith + Supabase prod</p>
+  <h3>CI/CD with eval gate</h3>
+  <pre><code>PR → lint + typecheck + unit + build
+  ↓ merge main
+deploy staging → run offline eval (3-5 scenarios, N=3 trials)
+  ↓ regression check: no category_score drop > 5%
+PASS → deploy prod + tag harness version
+FAIL → block, notify, manual override required</code></pre>
+  <h3>Env vars</h3>
+  <pre><code>SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+LANGSMITH_API_KEY, LANGSMITH_TRACING=true, LANGSMITH_PROJECT=vatespira
+OPENAI_API_KEY, ANTHROPIC_API_KEY        # fallback hosted free tier
+GOOGLE_API_KEY, DEEPSEEK_API_KEY         # MVP priority providers
+OPENROUTER_API_KEY                        # ZAI/GLM routing
+DEEPAGENTS_EVALS_MODEL                    # default offline eval model</code></pre>
+</section>
+
+<section id="gloss">
+  <h2><span class="n">📖</span>Glossary</h2>
+  <div class="gl">
+    <div class="gi"><div class="gt">harness</div><div class="gd">Bộ khung agent: vòng lặp + tools + context management + HITL. Agent chạy trong harness.</div></div>
+    <div class="gi"><div class="gt">agent</div><div class="gd">AI tự chủ: nhận yêu cầu → gọi tools → làm việc → trả kết quả. Khác chatbot (chỉ trả lời text).</div></div>
+    <div class="gi"><div class="gt">deepagents</div><div class="gd">Bộ harness open-source của LangChain, inspired by Claude Code. Lớp 1 (consume).</div></div>
+    <div class="gi"><div class="gt">LangGraph</div><div class="gd">Runtime (engine) chạy agent. deepagents chạy trên nó.</div></div>
+    <div class="gi"><div class="gt">LangSmith</div><div class="gd">Dịch vụ deploy + giám sát agent (ở ngoài stack runtime).</div></div>
+    <div class="gi"><div class="gt">codex</div><div class="gd">"Sổ tay thế giới" — dữ liệu cấu trúc về nhân vật/địa điểm/timeline/lore. (Mượn thuật ngữ NovelCrafter.)</div></div>
+    <div class="gi"><div class="gt">manuscript</div><div class="gd">"Bản thảo" — văn xuôi các chương. Lưu như file.</div></div>
+    <div class="gi"><div class="gt">HITL (Human-in-the-loop)</div><div class="gd">Agent xin người duyệt trước thao tác nhạy cảm (sửa bản thảo).</div></div>
+    <div class="gi"><div class="gt">rubric</div><div class="gd">Tiêu chí chấm điểm — VD: "chương phải nhất quán POV, pacing đều". Agent tự chấm theo.</div></div>
+    <div class="gi"><div class="gt">RubricMiddleware</div><div class="gd">Cơ chế deepagents: agent tự chấm tác phẩm theo rubric, chưa đạt thì tự sửa.</div></div>
+    <div class="gi"><div class="gt">BYOK</div><div class="gd">Bring Your Own Key — user mang API key AI riêng.</div></div>
+    <div class="gi"><div class="gt">StoreBackend</div><div class="gd">Cách deepagents lưu "file" trong DB (Postgres) thay vì ổ đĩa.</div></div>
+    <div class="gi"><div class="gt">RLS</div><div class="gd">Row Level Security (Postgres) — mỗi dòng chỉ visible cho user sở hữu.</div></div>
+    <div class="gi"><div class="gt">ADR</div><div class="gd">Architecture Decision Record — hồ sơ ghi 1 quyết định + lý do.</div></div>
+    <div class="gi"><div class="gt">EARS AC</div><div class="gd">Cách viết yêu cầu kiểm chứng được (ubiquitous/state/event/unwanted/optional + SHALL).</div></div>
+    <div class="gi"><div class="gt">skill (SKILL.md)</div><div class="gd">"Kỹ năng" agent tải khi cần — VD: catalog trope, kỹ thuật viết.</div></div>
+    <div class="gi"><div class="gt">memory (AGENTS.md)</div><div class="gd">"Trí nhớ" luôn tải — VD: tóm tắt thế giới, sở thích tác giả.</div></div>
+    <div class="gi"><div class="gt">progression</div><div class="gd">Codex entry tiến hóa theo chương — VD: Elena ch.1 bất tín → ch.8 tin.</div></div>
+    <div class="gi"><div class="gt">Scene Beats</div><div class="gd">Gạch đầu dòng "gì xảy ra" trong scene. Cầu nối outline → prose.</div></div>
+    <div class="gi"><div class="gt">Appearance Heatmap</div><div class="gd">View hiển thị nhân vật/địa điểm xuất hiện ở chương nào — phát hiện gap/inconsistency.</div></div>
+  </div>
+  <div class="foot">
+    <p><strong>VateSpira</strong> — Architecture (technical) · 📋 2026-07-07</p>
+    <p style="margin-top:6px">Wireframe (author UX): <a href="wireframes/wireframes-deck.html">wireframes-deck.html</a> (low-fi) · <a href="wireframes/writing-hifi.html">writing-hifi.html</a> (hi-fi) · Formal MD: <code>docs/ARCHITECTURE.md</code></p>
+    <p style="margin-top:6px">Next: duyệt → <code>skill("project-init")</code> scaffold</p>
+  </div>
+</section>
+</div>
+<script>
+const secs=document.querySelectorAll('section'),navs=document.querySelectorAll('.nav a');
+const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){const id=e.target.id;navs.forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+id));}})},{rootMargin:'-70px 0px -70% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

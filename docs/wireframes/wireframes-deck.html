@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VateSpira — Wireframe Deck (low-fi)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f0f0;font-family:-apple-system,sans-serif;color:#333;padding:30px}
+.intro{max-width:900px;margin:0 auto 40px;padding:24px;background:#fff;border:1px solid #ccc;border-radius:4px}
+.intro h1{font-size:22px;font-weight:600;margin-bottom:8px}
+.intro p{font-size:13px;color:#666;line-height:1.6;margin-bottom:8px}
+.intro .meta{font-size:11px;color:#999;font-family:monospace;margin-top:12px}
+.frame{max-width:1100px;margin:0 auto 40px}
+.frame .ftitle{font-size:14px;font-weight:600;margin-bottom:6px;color:#333;display:flex;align-items:baseline;gap:10px}
+.frame .ftitle .n{font-family:monospace;color:#999;font-size:12px}
+.frame .fdesc{font-size:12px;color:#888;margin-bottom:10px;font-style:italic}
+.win{background:#fff;border:1px solid #bbb;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.bar{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#eee;border-bottom:1px solid #ccc;font-size:11px;color:#666;font-family:monospace;height:40px}
+.bar .logo{width:60px;height:18px;background:#ccc;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666}
+.bar .field{height:20px;background:#fff;border:1px solid #ccc;border-radius:2px;flex:1;max-width:200px;display:flex;align-items:center;padding:0 8px;font-size:10px;color:#aaa}
+.bar .btn{height:20px;background:#ddd;border:1px solid #bbb;border-radius:2px;padding:0 8px;display:flex;align-items:center;font-size:10px;color:#555}
+.bar .av{width:20px;height:20px;background:#ccc;border-radius:50%}
+.bar .spacer{flex:1}
+.tabs-row{display:flex;gap:0;padding:0 14px;background:#f5f5f5;border-bottom:1px solid #ccc;height:32px;align-items:center}
+.tab{padding:6px 14px;font-size:11px;color:#888;font-family:monospace;border-bottom:2px solid transparent}
+.tab.active{color:#333;border-bottom-color:#666;background:#fff}
+.content{display:grid;gap:0;min-height:420px}
+/* generic boxes */
+.box{background:#f5f5f5;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11px;color:#888;text-align:center;padding:12px;position:relative}
+.box .lbl{background:#eee;padding:2px 6px;border-radius:2px;color:#666;font-size:10px}
+.box.dark{background:#eee}
+.box.fill{background:#fafafa}
+/* layout helpers */
+.row{display:grid;gap:1px;background:#ddd}
+.sidebar-w{width:200px;background:#f5f5f5;border-right:1px solid #ddd;padding:10px;display:flex;flex-direction:column;gap:6px}
+.sidebar-w .item{height:24px;background:#eee;border-radius:2px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-family:monospace;color:#777}
+.sidebar-w .item.active{background:#ddd;color:#444}
+.chat-w{width:300px;background:#f5f5f5;border-left:1px solid #ddd;display:flex;flex-direction:column}
+.chat-w .ch-msgs{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px}
+.chat-w .ch-msg{background:#eee;border-radius:3px;padding:6px 8px;font-size:10px;font-family:monospace;color:#666;max-width:85%}
+.chat-w .ch-msg.me{align-self:flex-end;background:#e0e0e0}
+.chat-w .ch-input{padding:8px;border-top:1px solid #ddd}
+.chat-w .ch-input .ib{height:28px;background:#fff;border:1px solid #ccc;border-radius:14px;font-size:10px;font-family:monospace;color:#aaa;padding:0 10px;display:flex;align-items:center}
+.main-area{flex:1;padding:20px;display:flex;flex-direction:column;gap:12px}
+.grid-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.novel-card{height:120px;background:#f0f0f0;border:1px solid #ddd;border-radius:3px;padding:10px;display:flex;flex-direction:column;justify-content:space-between}
+.novel-card .nc-t{height:14px;background:#ccc;width:70%;border-radius:1px}
+.novel-card .nc-m{font-size:9px;font-family:monospace;color:#999}
+.beat-row{display:flex;gap:6px;align-items:center;padding:6px 8px;background:#fafafa;border:1px solid #ddd;border-radius:2px;font-size:10px;font-family:monospace;color:#666}
+.beat-row .bn{width:20px;height:20px;background:#ddd;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666}
+.beat-row .bt{flex:1;color:#888}
+.heatmap{display:grid;grid-template-columns:80px repeat(8,1fr);gap:1px;font-size:9px;font-family:monospace}
+.heatmap .hc{padding:4px;background:#eee;color:#666;text-align:center}
+.heatmap .hr{padding:4px;background:#f5f5f5;color:#888}
+.heatmap .cell{padding:4px;background:#fafafa;border:1px solid #eee}
+.heatmap .cell.on{background:#ccc}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.form-row .fl{width:120px;font-size:10px;font-family:monospace;color:#666}
+.form-row .fi{height:24px;flex:1;max-width:300px;background:#fff;border:1px solid #ccc;border-radius:2px}
+.legend{max-width:1100px;margin:0 auto 40px;padding:14px 20px;background:#fff;border:1px solid #ccc;border-radius:4px;font-size:11px;color:#666;line-height:1.7}
+.legend b{color:#333}
+.legend code{background:#eee;padding:1px 5px;border-radius:2px;font-size:10px}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>VateSpira — Wireframe Deck (low-fi)</h1>
+  <p>Wireframe thuần: hộp xám + nhãn, không màu, không font thật, không nội dung thật. Mục đích: chốt <strong>cấu trúc + layout</strong> mỗi màn, validate user flow chat-centric. KHÔNG phải design cuối.</p>
+  <p>Chat-centric: chat panel <strong>persistent</strong> bên phải trong mọi workspace view (vì user flow = chat). 4 view (Writing/Codex/Plot/Review) = cùng workspace, đổi main area, giữ chat.</p>
+  <div class="meta">6 frame · Dashboard + NovelWorkspace(4 views) + Settings · gray low-fi · 2026-07-07</div>
+</div>
+
+<!-- FRAME 1: Dashboard -->
+<div class="frame">
+  <div class="ftitle"><span class="n">01</span>Dashboard <span style="font-weight:400;font-size:12px;color:#999">— entry point, novel list</span></div>
+  <div class="fdesc">User vào app → thấy list novel + stats. Click novel → vào NovelWorkspace.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VateSpira</div>
+      <div class="field">tìm novel...</div>
+      <div class="spacer"></div>
+      <div class="btn">+ novel mới</div>
+      <div class="av"></div>
+    </div>
+    <div class="content" style="padding:24px;flex-direction:column">
+      <div class="box" style="height:30px;width:200px;justify-content:flex-start;padding:0 12px"><span class="lbl">Tiêu đề section: "Tiểu thuyết của tôi"</span></div>
+      <div class="grid-cards">
+        <div class="novel-card"><div class="nc-t"></div><div class="nc-m">Tháp Aether · 24k từ · 5 chương</div></div>
+        <div class="novel-card"><div class="nc-t"></div><div class="nc-m">Đêm Kurama · 8k từ · 2 chương</div></div>
+        <div class="novel-card"><div class="nc-t" style="width:40%"></div><div class="nc-m">+ tạo novel mới</div></div>
+      </div>
+      <div class="row" style="margin-top:12px;grid-template-columns:1fr 1fr 1fr">
+        <div class="box" style="height:60px"><span class="lbl">stat: từ hôm nay</span></div>
+        <div class="box" style="height:60px"><span class="lbl">stat: chuỗi ngày viết</span></div>
+        <div class="box" style="height:60px"><span class="lbl">stat: hoạt động gần đây</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRAME 2: Writing view -->
+<div class="frame">
+  <div class="ftitle"><span class="n">02</span>NovelWorkspace · Writing view <span style="font-weight:400;font-size:12px;color:#999">— editor + chat (default view)</span></div>
+  <div class="fdesc">View chính khi viết. Editor manuscript giữa, chat bên phải persistent, sidebar chapter list.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VS</div>
+      <div class="field">Tháp Aether</div>
+      <div class="field">Chương 5 ▾</div>
+      <div class="spacer"></div>
+      <div class="btn">đã lưu 14:32</div>
+    </div>
+    <div class="tabs-row">
+      <div class="tab active">✍ Writing</div>
+      <div class="tab">Codex</div>
+      <div class="tab">Plot</div>
+      <div class="tab">Review</div>
+    </div>
+    <div class="content" style="display:flex">
+      <div class="sidebar-w">
+        <div class="item">Ch 1 · Khởi hành</div>
+        <div class="item">Ch 2 · Đường mòn</div>
+        <div class="item">Ch 3 · Lời thề</div>
+        <div class="item">Ch 4 · Đêm giông</div>
+        <div class="item active">Ch 5 · Tháp hiện</div>
+        <div class="item">Ch 6 · ...</div>
+        <div class="box" style="margin-top:auto;height:24px">+ chương mới</div>
+      </div>
+      <div class="main-area">
+        <div class="box" style="height:24px;width:60%;justify-content:flex-start"><span class="lbl">tiêu đề chương</span></div>
+        <div class="box fill" style="flex:1;align-items:flex-start;justify-content:flex-start;padding:16px;text-align:left">
+          <span class="lbl" style="font-size:10px">[ Editor — manuscript prose · TipTap · area lớn nhất ]<br><br>[段落 1...]<br>[段落 2...]<br>[段落 3...]</span>
+        </div>
+        <div class="box" style="height:24px;justify-content:space-between;padding:0 12px">
+          <span class="lbl">2,140 từ</span><span class="lbl">POV 1st · past</span>
+        </div>
+      </div>
+      <div class="chat-w">
+        <div class="box" style="height:30px;border-radius:0;border-left:none;border-bottom:1px solid #ddd"><span class="lbl">thư ký · chat</span></div>
+        <div class="ch-msgs">
+          <div class="ch-msg me">đoạn mở ch.5 ổn không?</div>
+          <div class="ch-msg">[agent] mâu thuẫn arc... đề xuất sửa</div>
+          <div class="box" style="border:1px dashed #999;background:#fafafa;height:60px"><span class="lbl" style="font-size:9px">[ HITL approval card ]<br>diff + duyệt/từ chối</span></div>
+        </div>
+        <div class="ch-input"><div class="ib">viết tiếp...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRAME 3: Codex view -->
+<div class="frame">
+  <div class="ftitle"><span class="n">03</span>NovelWorkspace · Codex view <span style="font-weight:400;font-size:12px;color:#999">— character portfolio / locations / timeline / lore</span></div>
+  <div class="fdesc">View sổ tay thế giới. Sub-tabs Characters/Locations/Timeline/Lore. Chat persistent — agent có thể tạo/sửa codex qua chat.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VS</div>
+      <div class="field">Tháp Aether</div>
+      <div class="spacer"></div>
+      <div class="btn">đã lưu</div>
+    </div>
+    <div class="tabs-row">
+      <div class="tab">Writing</div>
+      <div class="tab active">📖 Codex</div>
+      <div class="tab">Plot</div>
+      <div class="tab">Review</div>
+    </div>
+    <div class="content" style="display:flex">
+      <div class="sidebar-w">
+        <div class="box" style="height:24px">⌕ tìm codex...</div>
+        <div class="item active">Characters (4)</div>
+        <div class="item">Locations (6)</div>
+        <div class="item">Timeline</div>
+        <div class="item">Lore</div>
+        <div class="item">Items (2)</div>
+        <div class="box" style="margin-top:auto;height:24px">+ entry mới</div>
+      </div>
+      <div class="main-area">
+        <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="box dark" style="height:60px"><span class="lbl">[ avatar ]<br>Elena</span></div>
+          <div class="box" style="height:60px"><span class="lbl">[ avatar ]<br>Marcus</span></div>
+          <div class="box" style="height:60px"><span class="lbl">[ avatar ]<br>Vael</span></div>
+        </div>
+        <div class="box fill" style="flex:1;align-items:flex-start;justify-content:flex-start;padding:16px;text-align:left">
+          <span class="lbl" style="font-size:10px;text-align:left">[ Character portfolio card · selected ]<br>─────────────────<br>tên: Elena Voss<br>tuổi: 27<br>arc: bất tín → tin tưởng<br>POV: 1st person<br>progression: [ch1-4 bất tín] [ch5 do dự] [ch8+ tin]<br>relations: anh Marcus · thù Vael</span>
+        </div>
+      </div>
+      <div class="chat-w">
+        <div class="box" style="height:30px;border-radius:0;border-left:none;border-bottom:1px solid #ddd"><span class="lbl">thư ký · chat</span></div>
+        <div class="ch-msgs">
+          <div class="ch-msg me">phát triển Elena thêm</div>
+          <div class="ch-msg">[agent] đã cập nhật arc...</div>
+        </div>
+        <div class="ch-input"><div class="ib">viết tiếp...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRAME 4: Plot view -->
+<div class="frame">
+  <div class="ftitle"><span class="n">04</span>NovelWorkspace · Plot view <span style="font-weight:400;font-size:12px;color:#999">— beat sheet (Save the Cat) · technique skill loaded</span></div>
+  <div class="fdesc">View dàn ý. MVP = Save the Cat (15 beats). Agent guide fill từng beat qua chat. Technique = skill (agent load), view = beat sheet. KHÔNG phải flow khác — vẫn chat-centric.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VS</div>
+      <div class="field">Tháp Aether</div>
+      <div class="spacer"></div>
+      <div class="btn">technique: Save the Cat ▾</div>
+      <div class="btn">đã lưu</div>
+    </div>
+    <div class="tabs-row">
+      <div class="tab">Writing</div>
+      <div class="tab">Codex</div>
+      <div class="tab active">🎭 Plot</div>
+      <div class="tab">Review</div>
+    </div>
+    <div class="content" style="display:flex">
+      <div class="main-area">
+        <div class="box" style="height:24px;width:50%;justify-content:flex-start"><span class="lbl">Beat sheet · Save the Cat (15 beats)</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="beat-row"><div class="bn">1</div><div class="bt">Opening Image [đã fill]</div></div>
+          <div class="beat-row"><div class="bn">2</div><div class="bt">Theme Stated [đã fill]</div></div>
+          <div class="beat-row"><div class="bn">3</div><div class="bt">Set-Up [đã fill]</div></div>
+          <div class="beat-row"><div class="bn">4</div><div class="bt">Catalyst [đang fill...]</div></div>
+          <div class="beat-row" style="opacity:.5"><div class="bn">5</div><div class="bt">Debate [trống]</div></div>
+          <div class="beat-row" style="opacity:.5"><div class="bn">6</div><div class="bt">Break into Two [trống]</div></div>
+          <div class="beat-row" style="opacity:.5"><div class="bn">7</div><div class="bt">B Story [trống]</div></div>
+          <div class="beat-row" style="opacity:.4"><div class="bn">…</div><div class="bt">[còn 8 beat]</div></div>
+        </div>
+      </div>
+      <div class="chat-w">
+        <div class="box" style="height:30px;border-radius:0;border-left:none;border-bottom:1px solid #ddd"><span class="lbl">thư ký · StC skill loaded</span></div>
+        <div class="ch-msgs">
+          <div class="ch-msg me">beat 4 Catalyst nên là gì?</div>
+          <div class="ch-msg">[agent] gợi ý: sự kiện thay đổi... Elena thấy tháp</div>
+          <div class="box" style="border:1px dashed #999;background:#fafafa;height:50px"><span class="lbl" style="font-size:9px">[auto-suggest options]<br>option A / B / C</span></div>
+        </div>
+        <div class="ch-input"><div class="ib">viết tiếp...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRAME 5: Review view -->
+<div class="frame">
+  <div class="ftitle"><span class="n">05</span>NovelWorkspace · Review view <span style="font-weight:400;font-size:12px;color:#999">— consistency check · appearance heatmap</span></div>
+  <div class="fdesc">View kiểm tra. Heatmap character×chapter phát hiện gap/inconsistency. Agent explain + suggest fix qua chat.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VS</div>
+      <div class="field">Tháp Aether</div>
+      <div class="spacer"></div>
+      <div class="btn">đã lưu</div>
+    </div>
+    <div class="tabs-row">
+      <div class="tab">Writing</div>
+      <div class="tab">Codex</div>
+      <div class="tab">Plot</div>
+      <div class="tab active">🔍 Review</div>
+    </div>
+    <div class="content" style="display:flex">
+      <div class="main-area">
+        <div class="box" style="height:24px;width:60%;justify-content:flex-start"><span class="lbl">Appearance heatmap · nhân vật × chương</span></div>
+        <div class="heatmap">
+          <div class="hc"></div><div class="hc">Ch1</div><div class="hc">Ch2</div><div class="hc">Ch3</div><div class="hc">Ch4</div><div class="hc">Ch5</div><div class="hc">Ch6</div><div class="hc">Ch7</div>
+          <div class="hr">Elena</div><div class="cell on"></div><div class="cell on"></div><div class="cell on"></div><div class="cell on"></div><div class="cell on"></div><div class="cell"></div><div class="cell"></div>
+          <div class="hr">Marcus</div><div class="cell on"></div><div class="cell on"></div><div class="cell on"></div><div class="cell on"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="hr">Vael</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell on" style="background:#c44"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+        <div class="box fill" style="align-items:flex-start;justify-content:flex-start;padding:12px;text-align:left">
+          <span class="lbl" style="font-size:10px;text-align:left">[ Consistency issues list ]<br>⚠ Vael xuất hiện ch.5 nhưng chưa được intro (chưa có scene giới thiệu)<br>⚠ Marcus biến mất sau ch.4 — cần làm rõ subplot</span>
+        </div>
+      </div>
+      <div class="chat-w">
+        <div class="box" style="height:30px;border-radius:0;border-left:none;border-bottom:1px solid #ddd"><span class="lbl">thư ký · chat</span></div>
+        <div class="ch-msgs">
+          <div class="ch-msg me">fix issue Vael thế nào?</div>
+          <div class="ch-msg">[agent] thêm 1 scene intro Vael ở ch.4...</div>
+          <div class="box" style="border:1px dashed #999;background:#fafafa;height:50px"><span class="lbl" style="font-size:9px">[ HITL · đề xuất thêm scene ]</span></div>
+        </div>
+        <div class="ch-input"><div class="ib">viết tiếp...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRAME 6: Settings -->
+<div class="frame">
+  <div class="ftitle"><span class="n">06</span>Settings <span style="font-weight:400;font-size:12px;color:#999">— BYOK, language, theme, subscription</span></div>
+  <div class="fdesc">Config user. BYOK keys (Gemini/DeepSeek/ZAI), language, theme, subscription tier.</div>
+  <div class="win">
+    <div class="bar">
+      <div class="logo">VS</div>
+      <div class="field">Settings</div>
+      <div class="spacer"></div>
+      <div class="av"></div>
+    </div>
+    <div class="content" style="display:flex">
+      <div class="sidebar-w">
+        <div class="item active">Profile</div>
+        <div class="item">AI Providers (BYOK)</div>
+        <div class="item">Subscription</div>
+        <div class="item">Language</div>
+        <div class="item">Theme</div>
+      </div>
+      <div class="main-area">
+        <div class="box" style="height:24px;width:40%;justify-content:flex-start"><span class="lbl">AI Providers (BYOK)</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="form-row"><div class="fl">Gemini API key</div><div class="fi"></div><div class="box" style="height:24px;width:60px"><span class="lbl">đã lưu</span></div></div>
+          <div class="form-row"><div class="fl">DeepSeek API key</div><div class="fi"></div><div class="box" style="height:24px;width:60px"><span class="lbl">đã lưu</span></div></div>
+          <div class="form-row"><div class="fl">ZAI (Zhipu) key</div><div class="fi"></div><div class="box" style="height:24px;width:60px"><span class="lbl">chưa</span></div></div>
+          <div class="form-row"><div class="fl">Default model</div><div class="fi" style="display:flex;align-items:center;padding:0 8px"><span style="font-size:10px;font-family:monospace;color:#aaa">gemini-3.5-flash ▾</span></div></div>
+        </div>
+        <div class="box" style="height:24px;width:30%;justify-content:flex-start;margin-top:12px"><span class="lbl">Subscription · Free</span></div>
+        <div class="box" style="height:40px;width:50%"><span class="lbl">[ upgrade to Pro ]</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <b>Legend</b> — đây là wireframe low-fi: hộp xám + nhãn, không màu/font thật/nội dung thật.<br>
+  Mục đích: chốt <b>cấu trúc + layout</b> 6 màn, validate <code>user flow chat-centric</code> (chat persistent bên phải mọi workspace view).<br>
+  <b>Design direction A (Raw Elegance) đã chốt</b> → hi-fi mockup (<a href="writing-hifi.html" style="color:#a93226">writing-hifi.html</a>) = wireframe + direction → build component.
+</div>
+
+</body>
+</html>
