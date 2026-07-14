@@ -8,6 +8,7 @@ dependencies = [
     "langchain>=0.3",
     "langchain-google-genai",
     "langchain-deepseek",
+    "langchain-openrouter>=0.2.0",
     "fastapi",
     "uvicorn[standard]",
     "supabase",
