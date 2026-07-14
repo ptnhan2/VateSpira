@@ -1,14 +1,14 @@
 # .kilo/role-memory/ — Role Memory
 
-> Memory files cho từng role. Auto-load theo role (Manager auto-load manager.md, Worker auto-load worker.md, etc.).
+> Memory files cho từng role. Auto-load theo role (Manager auto-load manager-memory.md, Worker auto-load worker-memory.md, etc.).
 > ⚠️ Role isolation: KHÔNG đọc file của role khác.
 
 | Role | File | Auto-load | Nội dung |
 |------|------|-----------|----------|
-| Manager | manager.md | ✅ Manager | User preferences, sprint patterns, release rules, lessons |
-| Worker | worker.md | ✅ Worker | Codebase patterns, conventions, lessons, pitfalls |
-| FE Dev | fe-dev.md | ✅ FE Dev | Design preferences, component patterns, UI conventions |
-| Reviewer | reviewer.md | ✅ Reviewer | Review patterns, common rejection reasons, lessons |
+| Manager | manager-memory.md | ✅ Manager | User preferences, sprint patterns, release rules, lessons |
+| Worker | worker-memory.md | ✅ Worker | Codebase patterns, conventions, lessons, pitfalls |
+| FE Dev | fe-dev-memory.md | ✅ FE Dev | Design preferences, component patterns, UI conventions |
+| Reviewer | reviewer-memory.md | ✅ Reviewer | Review patterns, common rejection reasons, lessons |
 
 ## Rules
 - Chỉ role sở hữu file được ghi vào file đó.

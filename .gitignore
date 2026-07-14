@@ -16,3 +16,6 @@ out/
 *.swp
 .idea/
 .vscode/
+# Artifacts
+.playwright-mcp/
+*.png

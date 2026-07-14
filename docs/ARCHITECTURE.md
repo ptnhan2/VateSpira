@@ -394,7 +394,7 @@ PR -> lint + typecheck + unit test + build
 | Extension point | What we BUILD | deepagents provides |
 |-----------------|---------------|---------------------|
 | `tools=` | ~10 custom @tools (codex CRUD, check_consistency, pacing, portfolio) | additive tool mechanism |
-| `backend=` | CompositeBackend routes (/manuscript/, /codex/, /memories/, /skills/) | StoreBackend, CompositeBackend, StateBackend |
+| `backend=` | CompositeBackend routes (/manuscript/, /memories/, /skills/ — codex = structured Postgres (NOT file route, via @tools)) | StoreBackend, CompositeBackend, StateBackend |
 | `skills=` | SKILL.md files (trope, prose, scene) | SkillsMiddleware + progressive disclosure |
 | `memory=` | AGENTS.md (novel bible, author prefs) | MemoryMiddleware + trust/verify |
 | `permissions=` | FilesystemPermission interrupt on /manuscript/** | HITL enforcement |

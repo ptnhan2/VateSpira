@@ -87,7 +87,9 @@ class BYOKMiddleware(AgentMiddleware):
         Returns:
             Model response từ model BYOK hoặc default.
         """
-        byok_model = self._resolve_byok_model(request.runtime.context)
+        rt = request.runtime
+        ctx = rt.context if rt is not None else None
+        byok_model = self._resolve_byok_model(ctx)
         if byok_model is not None:
             request = request.override(model=byok_model)
         return handler(request)
@@ -102,7 +104,9 @@ class BYOKMiddleware(AgentMiddleware):
         Returns:
             Model response từ model BYOK hoặc default.
         """
-        byok_model = self._resolve_byok_model(request.runtime.context)
+        rt = request.runtime
+        ctx = rt.context if rt is not None else None
+        byok_model = self._resolve_byok_model(ctx)
         if byok_model is not None:
             request = request.override(model=byok_model)
         return await handler(request)
