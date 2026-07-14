@@ -60,7 +60,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion">
+        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
           Workspace
         </p>
         <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">
@@ -81,7 +81,7 @@ export default function DashboardPage() {
       {/* Not configured notice */}
       {!configured && (
         <div className="mb-6 rounded-lg border border-vermilion/20 bg-vermilion-soft p-4 text-sm text-ink-2">
-          <p className="font-medium text-vermilion">Cần cấu hình Supabase</p>
+          <p className="font-medium text-vermilion dark:text-terracotta">Cần cấu hình Supabase</p>
           <p className="mt-1">
             Đặt <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code>{" "}
             và{" "}
@@ -94,7 +94,7 @@ export default function DashboardPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-6 rounded-lg border border-vermilion/20 bg-vermilion-soft p-4 text-sm text-vermilion">
+        <div className="mb-6 rounded-lg border border-vermilion/20 bg-vermilion-soft p-4 text-sm text-vermilion dark:text-terracotta">
           {error}
         </div>
       )}
@@ -164,7 +164,7 @@ function NovelCard({ novel }: { novel: Novel }) {
     : created.toLocaleDateString("vi-VN");
 
   return (
-    <article className="flex flex-col justify-between rounded-lg border border-line bg-surface p-5 transition-colors hover:border-vermilion">
+    <article className="flex flex-col justify-between rounded-lg border border-line bg-surface p-5 transition-colors hover:border-vermilion dark:hover:border-terracotta">
       <div>
         <h2 className="font-serif text-lg font-semibold text-ink">
           {novel.title}
@@ -186,7 +186,7 @@ function NewNovelCard() {
   return (
     <Link
       href="/novels/new"
-      className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line p-5 text-vermilion transition-colors hover:border-vermilion"
+      className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line p-5 text-vermilion dark:text-terracotta transition-colors hover:border-vermilion dark:hover:border-terracotta"
     >
       <span className="font-serif text-3xl font-light leading-none">+</span>
       <span className="text-sm font-medium">Tạo tiểu thuyết mới</span>
@@ -200,7 +200,7 @@ function NewNovelCard() {
  */
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-vermilion/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermilion">
+    <span className="rounded-full border border-vermilion/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermilion dark:text-terracotta">
       {children}
     </span>
   );
