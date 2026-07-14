@@ -426,7 +426,7 @@ PR -> lint + typecheck + unit test + build
 1. Next.js 16 app (App Router, Tailwind v4, TipTap)
 2. Python FastAPI BE + deepagents agent wiring + langgraph.json
 3. Supabase schema (codex tables + RLS + StoreBackend migrations)
-4. Root AGENTS.md (techstack + conventions) + .kilo/memory/
+4. Root AGENTS.md (techstack + conventions) + .kilo/role-memory/
 5. GitHub Project + Issues from P1 feature plan (UF-1..UF-5)
 6. Starter skills (1-2 SKILL.md) + starter rubrics (chapter-rubric)
 

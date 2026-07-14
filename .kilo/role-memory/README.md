@@ -1,4 +1,4 @@
-# .kilo/memory/ — Role Memory
+# .kilo/role-memory/ — Role Memory
 
 > Memory files cho từng role. Auto-load theo role (Manager auto-load manager.md, Worker auto-load worker.md, etc.).
 > ⚠️ Role isolation: KHÔNG đọc file của role khác.

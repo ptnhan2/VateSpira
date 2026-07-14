@@ -25,3 +25,9 @@
   gh project item-edit --id <item-id> --field-id $statusField.id --project-id $projectId --single-select-option-id $inProgress
   ```
 - **Ghi nho:** Project ID != Field-list output. Luon lay tu `gh project list`.
+
+### [2026-07-14] Worker thuong bo sot process gates (local-review, visual proof)
+- **Pitfall:** Worker #1 (Issue #1) bo sot `/local-review: PASS` (Gate R2.0) va `## VISUAL PROOF` section (Gate R2.3) trong PR body.
+- **Impact:** Reviewer phai compensate bang independent verification. APPROVE vi technical pass all AC, nhung ton thoi gian.
+- **Fix:** Nhac Worker tuan thu process gates trong prompt. Them vao template: PR body phai co /local-review: PASS + VISUAL PROOF.
+- **Ghi nho:** Process gates thuong bi bo sot — Reviewer APPROVE voi note, khong circular reject.

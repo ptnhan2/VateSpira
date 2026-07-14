@@ -1,0 +1,28 @@
+- generic [active] [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - generic [ref=f3e3]: VateSpira
+    - generic [ref=f3e4]: ›
+    - generic [ref=f3e5]: NovelWorkspace
+    - button "Chuyển dark/light mode" [ref=f3e6] [cursor=pointer]
+  - main [ref=f3e8]:
+    - main [ref=f3e10]:
+      - img "Next.js logo" [ref=f3e11]
+      - generic [ref=f3e12]:
+        - heading "To get started, edit the page.tsx file." [level=1] [ref=f3e13]
+        - paragraph [ref=f3e14]:
+          - text: Looking for a starting point or more instructions? Head over to
+          - link "Templates" [ref=f3e15] [cursor=pointer]:
+            - /url: https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
+          - text: or the
+          - link "Learning" [ref=f3e16] [cursor=pointer]:
+            - /url: https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
+          - text: center.
+      - generic [ref=f3e17]:
+        - link [ref=f3e18] [cursor=pointer]:
+          - /url: https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
+          - img "Vercel logomark" [ref=f3e19]
+          - text: Deploy Now
+        - link "Documentation" [ref=f3e20] [cursor=pointer]:
+          - /url: https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
+  - button "Open Next.js Dev Tools" [ref=f3e26] [cursor=pointer]
+  - alert [ref=f3e30]
