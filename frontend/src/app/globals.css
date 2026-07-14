@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Direction A · Raw Elegance (iA Writer lineage) — LOCKED
+ * Light/dark switching qua [data-theme] attribute trên <html>.
+ * Tokens: docs/ARCHITECTURE.md §8.2 + docs/wireframes/writing-hifi.html
+ */
+
+/* dark: variant — map sang [data-theme="dark"] selector (thay vì prefers-color-scheme) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---- Light mode tokens (paper / ink / vermilion accent) ---- */
+:root[data-theme="light"] {
+  --paper: #fbfaf6;
+  --surface: #ffffff;
+  --surface-2: #f5f3ed;
+  --ink: #1a1a1a;
+  --ink-2: #3d3d3d;
+  --muted: #888888;
+  --line: #e5e2da;
+  --vermilion: #a93226;
+  --vermilion-soft: #fbeeea;
+  --terracotta: #c47a5a;
+  --terracotta-soft: #2a1f1a;
+  --sage: #5a7a5a;
+  --fade: 0.38;
 }
 
+/* ---- Dark mode tokens (ink / cream / terracotta accent) ---- */
+:root[data-theme="dark"] {
+  --paper: #1a1a1a;
+  --surface: #222222;
+  --surface-2: #2a2a2a;
+  --ink: #e8e4dc;
+  --ink-2: #c8c4bc;
+  --muted: #777777;
+  --line: #333333;
+  --vermilion: #a93226;
+  --vermilion-soft: #fbeeea;
+  --terracotta: #c47a5a;
+  --terracotta-soft: #2a1f1a;
+  --sage: #8aaa6a;
+  --fade: 0.4;
+}
+
+/* ---- Tailwind v4 theme mapping (sinh utilities: bg-paper, text-ink, border-line, ...) ---- */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-vermilion: var(--vermilion);
+  --color-vermilion-soft: var(--vermilion-soft);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-soft: var(--terracotta-soft);
+  --color-sage: var(--sage);
+
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ---- Base styles ---- */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
