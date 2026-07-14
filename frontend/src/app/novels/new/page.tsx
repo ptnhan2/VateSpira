@@ -112,7 +112,7 @@ export default function NewNovelPage() {
       </Link>
 
       <header className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion">
+        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
           Tạo mới
         </p>
         <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">
@@ -122,7 +122,7 @@ export default function NewNovelPage() {
 
       {!configured && (
         <div className="mt-6 rounded-lg border border-vermilion/20 bg-vermilion-soft p-4 text-sm text-ink-2">
-          <p className="font-medium text-vermilion">Cần cấu hình Supabase</p>
+          <p className="font-medium text-vermilion dark:text-terracotta">Cần cấu hình Supabase</p>
           <p className="mt-1">
             Đặt env vars trong{" "}
             <code className="font-mono text-xs">frontend/.env.local</code> trước
@@ -147,7 +147,7 @@ export default function NewNovelPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Tên tiểu thuyết của bạn"
-            className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion"
+            className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion dark:focus:border-terracotta"
           />
         </div>
 
@@ -199,7 +199,7 @@ export default function NewNovelPage() {
             id="technique"
             value={technique}
             onChange={(e) => setTechnique(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion"
+            className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion dark:focus:border-terracotta"
           >
             {TECHNIQUE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -214,7 +214,7 @@ export default function NewNovelPage() {
 
         {/* Error */}
         {error && (
-          <p className="text-sm text-vermilion">{error}</p>
+          <p className="text-sm text-vermilion dark:text-terracotta">{error}</p>
         )}
 
         {/* Submit */}
@@ -268,7 +268,7 @@ function SelectField({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion"
+        className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink outline-none transition-colors focus:border-vermilion dark:focus:border-terracotta"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
