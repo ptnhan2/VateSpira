@@ -10,6 +10,7 @@ Agent deepagents chat-centric cho tác giả tiểu thuyết.
 See: docs/ARCHITECTURE.md
 """
 
+import json
 from typing import Any
 
 from deepagents import FilesystemPermission, create_deep_agent
@@ -18,6 +19,10 @@ from deepagents.profiles.provider.provider_profiles import apply_provider_profil
 from langchain.agents.middleware.types import AgentMiddleware
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+from langchain_core.tools import tool
+from langgraph.prebuilt import ToolRuntime
+
+import codex_service
 
 WRITING_COLLABORATOR_PROMPT = """\
 You are VateSpira, a writing collaborator for novelists.
@@ -132,14 +137,128 @@ permissions = [
     ),
 ]
 
-# TODO: add custom @tools (codex CRUD, check_consistency, etc.) as features are built
 # TODO: add skills=["/skills/"], memory=["/memories/novel-bible.md"]
 # TODO: add RubricMiddleware with chapter-rubric
+
+
+def _get_user_id(runtime: ToolRuntime) -> str:
+    """Trích xuất user_id từ ToolRuntime context.
+
+    Context schema (xem docs/ARCHITECTURE.md Section 7.1):
+        {model: str, api_key?: str, novel_id?: str, user_id?: str}
+
+    Args:
+        runtime: ToolRuntime injected bởi framework, chứa context.
+
+    Returns:
+        user_id string từ context.
+
+    Raises:
+        ValueError: Nếu context hoặc user_id không có (security boundary).
+    """
+    ctx = runtime.context
+    if ctx is None:
+        raise ValueError(
+            "Runtime context không có user_id — không thể thực hiện thao tác codex."
+        )
+    user_id = (
+        ctx.get("user_id") if hasattr(ctx, "get") else getattr(ctx, "user_id", None)
+    )
+    if not user_id:
+        raise ValueError(
+            "Runtime context không có user_id — không thể thực hiện thao tác codex."
+        )
+    return str(user_id)
+
+
+@tool
+def create_novel(
+    title: str,
+    runtime: ToolRuntime,
+    language: str = "vi",
+    pov: str = "",
+    tense: str = "",
+    technique: str = "save-the-cat",
+) -> str:
+    """Tạo novel project mới với title, language, POV, tense, và technique.
+
+    Dùng khi user muốn bắt đầu một novel mới. Novel được lưu vào Supabase
+    novels table (codex root entity), đồng thời scaffold initial manuscript
+    (/manuscript/outline.md) và memory (/memories/novel-bible.md) files.
+    Scoped theo user_id từ runtime context (multi-tenant).
+
+    Args:
+        title: Tiêu đề novel (bắt buộc).
+        language: Mã ngôn ngữ, vd 'vi', 'en' (default 'vi').
+        pov: Point of view, vd 'first', 'third-limited' (default rỗng).
+        tense: Thì kể, vd 'past', 'present' (default rỗng).
+        technique: Structure technique (default 'save-the-cat').
+
+    Returns:
+        JSON string chứa novel record + scaffold status.
+    """
+    user_id = _get_user_id(runtime)
+    result = codex_service.create_novel(
+        user_id=user_id,
+        title=title,
+        language=language,
+        pov=pov or None,
+        tense=tense or None,
+        technique=technique,
+    )
+    # Scaffold manuscript + memory files (best-effort)
+    scaffold = []
+    for path, content in [
+        ("/manuscript/outline.md", f"# Outline — {title}\n\n"),
+        (
+            "/memories/novel-bible.md",
+            f"# Novel Bible — {title}\n\n## Nhân vật\n\n## Thế giới\n\n## Cốt truyện\n",
+        ),
+    ]:
+        res = backend.write(path, content)
+        scaffold.append({"path": path, "ok": res.error is None})
+    result["scaffold"] = scaffold
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def list_novels(runtime: ToolRuntime) -> str:
+    """Liệt kê tất cả novels của user hiện tại.
+
+    Trả về danh sách các novel project mà user đã tạo, sắp xếp theo mới nhất.
+
+    Returns:
+        JSON string chứa list các novel record (id, title, technique, ...).
+    """
+    user_id = _get_user_id(runtime)
+    result = codex_service.list_novels(user_id=user_id)
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def get_novel(novel_id: str, runtime: ToolRuntime) -> str:
+    """Lấy chi tiết một novel theo id.
+
+    Args:
+        novel_id: UUID của novel cần xem.
+
+    Returns:
+        JSON string chứa novel record, hoặc thông báo lỗi không tìm thấy.
+    """
+    user_id = _get_user_id(runtime)
+    result = codex_service.get_novel(novel_id=novel_id, user_id=user_id)
+    if result is None:
+        return json.dumps(
+            {"error": f"Novel {novel_id} không tìm thấy."},
+            ensure_ascii=False,
+        )
+    return json.dumps(result, ensure_ascii=False, default=str)
+
 
 agent = create_deep_agent(
     model="anthropic:claude-sonnet-4-6",  # default; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
-    tools=[],  # custom codex tools added as features are built
+    tools=[create_novel, list_novels, get_novel],
     middleware=[BYOKMiddleware()],
     backend=backend,
     permissions=permissions,
