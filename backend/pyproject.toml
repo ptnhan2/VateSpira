@@ -16,6 +16,9 @@ dependencies = [
     "pydantic>=2",
 ]
 
+[dependency-groups]
+dev = ["ruff>=0.5", "pytest>=8"]
+
 [tool.ruff]
 line-length = 100
 
