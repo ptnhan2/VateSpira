@@ -9,7 +9,7 @@
 - **Backend:** Python 3.13 + FastAPI + deepagents 0.6.12 + LangGraph
 - **Database:** Supabase Postgres (+ Auth + Storage)
 - **Agent runtime:** LangSmith (LangGraph Platform) — deploy + stream + tracing + eval
-- **AI providers:** BYOK — MVP: Gemini (langchain-google-genai), DeepSeek (langchain-deepseek, `deepseek-chat` not `deepseek-reasoner`), ZAI/Zhipu (openrouter:z-ai/glm-5.2). Full: OpenAI, Anthropic, OpenRouter, Ollama.
+- **AI providers:** BYOK — MVP: Gemini (langchain-google-genai), DeepSeek (langchain-deepseek, `deepseek-chat` not `deepseek-reasoner`), ZAI/Zhipu (langchain-openrouter, openrouter:z-ai/glm-5.2). Full: OpenAI, Anthropic, OpenRouter, Ollama.
 - **Design direction:** A · Raw Elegance (iA Writer lineage) — LOCKED. Light: paper #fbfaf6 / ink #1a1a1a / vermilion #a93226. Dark: ink #1a1a1a / cream #e8e4dc / terracotta #c47a5a. Newsreader (serif) + Inter (UI) + JetBrains Mono.
 - **Test FE:** vitest
 - **Test BE:** pytest
