@@ -256,7 +256,7 @@ def get_novel(novel_id: str, runtime: ToolRuntime) -> str:
 
 
 agent = create_deep_agent(
-    model="google_genai:gemini-2.5-flash",  # MVP priority #1; overridden by BYOK @wrap_model_call
+    model="deepseek:deepseek-chat",  # MVP priority #1; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
     tools=[create_novel, list_novels, get_novel],
     middleware=[BYOKMiddleware()],
