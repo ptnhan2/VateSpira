@@ -245,12 +245,13 @@ def _get_user_id(runtime: ToolRuntime) -> str:
 def create_novel(
     title: str,
     runtime: ToolRuntime,
+    genre: str = "",
     language: str = "vi",
     pov: str = "",
     tense: str = "",
     technique: str = "save-the-cat",
 ) -> str:
-    """Tạo novel project mới với title, language, POV, tense, và technique.
+    """Tạo novel project mới với title, genre, language, POV, tense, và technique.
 
     Dùng khi user muốn bắt đầu một novel mới. Novel được lưu vào Supabase
     novels table (codex root entity), đồng thời scaffold initial manuscript
@@ -259,6 +260,7 @@ def create_novel(
 
     Args:
         title: Tiêu đề novel (bắt buộc).
+        genre: Thể loại, vd 'fantasy', 'sci-fi' (default rỗng → None).
         language: Mã ngôn ngữ, vd 'vi', 'en' (default 'vi').
         pov: Point of view, vd 'first', 'third-limited' (default rỗng).
         tense: Thì kể, vd 'past', 'present' (default rỗng).
@@ -271,6 +273,7 @@ def create_novel(
     result = codex_service.create_novel(
         user_id=user_id,
         title=title,
+        genre=genre or None,
         language=language,
         pov=pov or None,
         tense=tense or None,

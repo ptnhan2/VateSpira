@@ -127,6 +127,28 @@ def test_create_novel_scaffold_uses_title_in_content():
     assert any("MyNovel" in c for c in contents)
 
 
+def test_create_novel_passes_genre_to_service():
+    """create_novel tool truyền genre cho codex_service khi được cung cấp."""
+    rt = _make_runtime(user_id="u1")
+    with (
+        patch.object(agent.codex_service, "create_novel", return_value={"id": "n1"}) as mock_fn,
+        patch.object(agent, "backend"),
+    ):
+        agent.create_novel.func(title="T", runtime=rt, genre="fantasy")
+    assert mock_fn.call_args.kwargs["genre"] == "fantasy"
+
+
+def test_create_novel_converts_empty_genre_to_none():
+    """create_novel tool chuyển genre rỗng thành None (DB nullable)."""
+    rt = _make_runtime(user_id="u1")
+    with (
+        patch.object(agent.codex_service, "create_novel", return_value={"id": "n1"}) as mock_fn,
+        patch.object(agent, "backend"),
+    ):
+        agent.create_novel.func(title="T", runtime=rt, genre="")
+    assert mock_fn.call_args.kwargs["genre"] is None
+
+
 # --- list_novels tool ---
 
 def test_list_novels_returns_json_list():

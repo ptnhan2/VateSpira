@@ -46,6 +46,7 @@ def _get_client() -> Client:
 def create_novel(
     user_id: str,
     title: str,
+    genre: str | None = None,
     language: str = "vi",
     pov: str | None = None,
     tense: str | None = None,
@@ -56,6 +57,7 @@ def create_novel(
     Args:
         user_id: UUID của user (từ runtime.context, multi-tenant isolation).
         title: Tiêu đề novel.
+        genre: Thể loại, vd 'fantasy', 'sci-fi' (nullable).
         language: Mã ngôn ngữ (default 'vi').
         pov: Point of view, vd 'first', 'third-limited' (nullable).
         tense: Thì kể, vd 'past', 'present' (nullable).
@@ -71,6 +73,7 @@ def create_novel(
     payload = {
         "user_id": user_id,
         "title": title,
+        "genre": genre,
         "language": language,
         "pov": pov,
         "tense": tense,

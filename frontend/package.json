@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@langchain/langgraph-sdk": "1.9.26",
     "@supabase/supabase-js": "^2.110.3",
     "@tiptap/pm": "^3.27.3",
     "@tiptap/react": "^3.27.3",
