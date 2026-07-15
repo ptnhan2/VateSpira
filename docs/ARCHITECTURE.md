@@ -388,7 +388,7 @@ PR -> lint + typecheck + unit test + build
 | deepagents | 0.6.12 | harness engine |
 | LangGraph + LangSmith | latest | runtime + deploy + eval |
 | Supabase | latest | Postgres 15+, Auth, Storage, Realtime |
-| Models | claude-sonnet-4-6, claude-opus-4-7, gpt-5.5, gemini-2.5-flash, openrouter:*, ollama:* | BYOK |
+| Models | deepseek-chat (default), claude-sonnet-4-6, claude-opus-4-7, gpt-5.5, gemini-2.5-flash, openrouter:*, ollama:* | BYOK |
 
 ## Appendix B: deepagents extension points (BUILD ON TOP)
 | Extension point | What we BUILD | deepagents provides |
