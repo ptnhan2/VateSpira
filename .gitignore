@@ -19,3 +19,6 @@ out/
 # Artifacts
 .playwright-mcp/
 *.png
+
+# pnpm workspace config (causes CI error if committed)
+frontend/pnpm-workspace.yaml
