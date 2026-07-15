@@ -1,28 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 
 /**
- * Holder hoisted — mock `isSupabaseConfigured`, supabase client (auth.getUser +
- * from().insert()) và `router.push` của next/navigation. Phải dùng `vi.hoisted`
- * vì vi.mock factory bị hoist lên đầu file.
+ * Holder hoisted — mock `isSupabaseConfigured`, supabase client (auth.getUser),
+ * `createNovelViaAgent` và `router.push` của next/navigation. Phải dùng
+ * `vi.hoisted` vì vi.mock factory bị hoist lên đầu file (fe-dev-memory).
  */
-const { supabaseState, supabaseMock, routerPush } = vi.hoisted(() => {
-  /** Cờ cấu hình Supabase, đổi per-test qua getter. */
-  const supabaseState = { configured: true };
-  const routerPush = vi.fn();
-  const supabaseMock = {
-    auth: { getUser: vi.fn() },
-    from: vi.fn(() => ({ insert: vi.fn() })),
-  };
-  return { supabaseState, supabaseMock, routerPush };
-});
+const { supabaseState, supabaseMock, routerPush, createNovelMock } =
+  vi.hoisted(() => {
+    /** Cờ cấu hình Supabase, đổi per-test qua getter. */
+    const supabaseState = { configured: true };
+    const routerPush = vi.fn();
+    const supabaseMock = {
+      auth: { getUser: vi.fn() },
+    };
+    const createNovelMock = vi.fn();
+    return { supabaseState, supabaseMock, routerPush, createNovelMock };
+  });
 
 vi.mock("@/lib/supabase", () => ({
   get isSupabaseConfigured() {
     return supabaseState.configured;
   },
   supabase: supabaseMock,
+}));
+
+vi.mock("@/lib/agent", () => ({
+  createNovelViaAgent: createNovelMock,
 }));
 
 // Mock next/navigation.useRouter — form dùng router.push("/") sau khi submit.
@@ -45,9 +50,7 @@ describe("Novel form (trang tạo tiểu thuyết mới)", () => {
       data: { user: null },
       error: null,
     });
-    supabaseMock.from.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-    });
+    createNovelMock.mockReset();
     routerPush.mockClear();
   });
 
@@ -86,5 +89,47 @@ describe("Novel form (trang tạo tiểu thuyết mới)", () => {
     expect(
       screen.getByRole("button", { name: "Tạo tiểu thuyết" }),
     ).toBeEnabled();
+  });
+
+  it("submit gọi createNovelViaAgent với giá trị form rồi redirect", async () => {
+    createNovelMock.mockResolvedValue({
+      success: true,
+      novelId: "n1",
+      scaffold: [{ path: "/manuscript/outline.md", ok: true }],
+    });
+    render(<NewNovelPage />);
+    fireEvent.change(screen.getByLabelText("Tiêu đề"), {
+      target: { value: "Tiểu thuyết của tôi" },
+    });
+    fireEvent.change(screen.getByLabelText("Thể loại"), {
+      target: { value: "fantasy" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo tiểu thuyết" }));
+
+    await waitFor(() => {
+      expect(createNovelMock).toHaveBeenCalledTimes(1);
+    });
+    const arg = createNovelMock.mock.calls[0][0];
+    expect(arg.title).toBe("Tiểu thuyết của tôi");
+    expect(arg.genre).toBe("fantasy");
+    expect(arg.technique).toBe("save-the-cat");
+    expect(routerPush).toHaveBeenCalledWith("/");
+  });
+
+  it("submit lỗi hiện thông báo, không redirect", async () => {
+    createNovelMock.mockResolvedValue({
+      success: false,
+      error: "Agent lỗi: timeout",
+    });
+    render(<NewNovelPage />);
+    fireEvent.change(screen.getByLabelText("Tiêu đề"), {
+      target: { value: "Tiểu thuyết lỗi" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo tiểu thuyết" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Agent lỗi: timeout")).toBeInTheDocument();
+    });
+    expect(routerPush).not.toHaveBeenCalled();
   });
 });

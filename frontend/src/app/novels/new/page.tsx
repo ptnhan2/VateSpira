@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createNovelViaAgent } from "@/lib/agent";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 /** Tùy chọn thể loại tiểu thuyết. */
@@ -47,7 +48,8 @@ const TECHNIQUE_OPTIONS = [
  * Trang tạo tiểu thuyết mới — form nhập title, genre, language, POV, tense
  * và chọn kỹ thuật cấu trúc (mặc định Save the Cat).
  *
- * Flow: nhập form → submit → insert vào Supabase novels table → redirect Dashboard.
+ * Flow: nhập form → submit → gọi backend agent (qua /api/novels/create) →
+ * agent tạo novel + scaffold manuscript/memory files → redirect Dashboard.
  * Khi Supabase chưa cấu hình hoặc chưa có auth, hiển thị lỗi tương ứng.
  */
 export default function NewNovelPage() {
@@ -66,7 +68,9 @@ export default function NewNovelPage() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Xử lý submit form — insert novel vào Supabase rồi redirect về Dashboard.
+   * Xử lý submit form — gọi backend agent tạo novel (scaffold files) rồi
+   * redirect về Dashboard. Lấy user_id từ session browser (server dùng dev
+   * fallback env khi chưa login).
    * @param e - Submit event.
    */
   async function handleSubmit(e: React.FormEvent) {
@@ -77,25 +81,34 @@ export default function NewNovelPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const { error: insertError } = await supabase.from("novels").insert({
+      // Lấy user_id từ session browser (server dùng dev fallback nếu chưa login).
+      let userId: string | undefined;
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        userId = user?.id;
+      } catch {
+        userId = undefined;
+      }
+      const result = await createNovelViaAgent({
         title: trimmed,
         genre,
         language,
         pov,
         tense,
         technique,
-        ...(user ? { user_id: user.id } : {}),
+        userId,
       });
-      if (insertError) throw insertError;
+      if (!result.success) {
+        throw new Error(result.error ?? "Không thể tạo tiểu thuyết.");
+      }
       router.push("/");
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Không thể tạo tiểu thuyết. Kiểm tra cấu hình Supabase.",
+          : "Không thể tạo tiểu thuyết. Vui lòng thử lại.",
       );
     } finally {
       setSubmitting(false);
