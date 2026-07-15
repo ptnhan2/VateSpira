@@ -1,6 +1,7 @@
 # VateSpira setup script - runs automatically when Agent Manager creates a worktree
-# Copies root .env to frontend/.env.local (Next.js requires .env* in frontend/)
-# Backend reads root .env directly via langgraph.json + conftest.py (no copy needed)
+# Backend reads root .env via langgraph.json + conftest.py
+# Frontend reads root .env via dotenv in next.config.ts
+# No env copies needed - everything reads root .env directly
 
 $worktreePath = $env:WORKTREE_PATH
 $repoPath = $env:REPO_PATH
@@ -10,14 +11,10 @@ if (-not $worktreePath) { $worktreePath = $PWD.Path }
 Write-Host "=== VateSpira Worktree Setup ==="
 Write-Host "Worktree: $worktreePath"
 
-# 1. Copy root .env to frontend/.env.local (straight copy - Next.js picks NEXT_PUBLIC_ vars)
+# 1. Verify root .env exists
 $rootEnv = Join-Path $worktreePath ".env"
-$frontendEnv = Join-Path $worktreePath "frontend\.env.local"
-if ((Test-Path $rootEnv) -and (-not (Test-Path $frontendEnv))) {
-    Copy-Item $rootEnv $frontendEnv
-    Write-Host "[OK] Copied .env -> frontend/.env.local"
-} elseif (Test-Path $frontendEnv) {
-    Write-Host "[SKIP] frontend/.env.local already exists"
+if (Test-Path $rootEnv) {
+    Write-Host "[OK] Root .env found"
 } else {
     Write-Host "[WARN] No root .env found. Create it at repo root with real credentials."
 }
@@ -37,7 +34,7 @@ $frontendPath = Join-Path $worktreePath "frontend"
 if (Test-Path (Join-Path $frontendPath "package.json")) {
     Write-Host "[INFO] Installing frontend deps (pnpm install)..."
     Push-Location $frontendPath
-    pnpm install 2>&1 | Out-Null
+    pnpm install --no-frozen-lockfile 2>&1 | Out-Null
     Pop-Location
     Write-Host "[OK] Frontend deps installed"
 }

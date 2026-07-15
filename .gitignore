@@ -22,3 +22,6 @@ out/
 
 # pnpm workspace config (causes CI error if committed)
 frontend/pnpm-workspace.yaml
+
+# pnpm workspace (auto-created, causes CI error)
+frontend/pnpm-workspace.yaml
