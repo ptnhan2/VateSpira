@@ -37,3 +37,29 @@
 - **Impact:** Reviewer phải compensate bằng independent verification. APPROVE vì technical pass all AC, nhưng tốn thời gian.
 - **Fix:** Nhắc Worker tuân thủ process gates trong prompt. Thêm vào template: PR body phải có /local-review: PASS + VISUAL PROOF.
 - **Ghi nhớ:** Process gates thường bị bỏ sót — Reviewer APPROVE với note, không circular reject.
+
+
+## Sprint 1 Retrospective (2026-07-15) — Foundation + UF-1
+
+### START (Bắt đầu làm)
+- Resource Check trước khi dispatch Worker (đã thêm vào agent prompt Bước 8.5)
+- E2E test với real credentials, không chỉ mock (đã thêm Golden Rule vào worker-agent.md)
+- Reviewer test trên PR branch, không test trên main (đã thêm BRANCH CHECK)
+- Setup script tự động copy .env sang worktree (đã tạo .kilo/setup-script.ps1)
+
+### STOP (Dừng làm)
+- Manager duyệt plan quá dễ — không kiểm AC interpretation thật (lesson 2026-07-14)
+- Worker bỏ sót process gates: /local-review: PASS + VISUAL PROOF (lesson 2026-07-14)
+- Tự ý đổi tên file không xin phép User (lesson: role-memory *-memory.md rename)
+- Dùng PowerShell để ghi file tiếng Việt (strip dấu) — dùng Python
+
+### CONTINUE (Tiếp tục)
+- Reviewer evidence-grounded review (AC-to-code traceability + 5 risk areas)
+- TDD: Worker viết test trước, Red-Green pattern
+- doc-sync sau mỗi merge: ARCHITECTURE.md + AGENTS.md + FEATURES.md sync code reality
+- Direction A (Raw Elegance) design tokens consistent across FE
+
+### Action Items
+1. [ ] Manager: verify AC interpretation thật khi review plan (không tick box 8/8)
+2. [ ] Worker: PR body phải có /local-review: PASS + VISUAL PROOF section
+3. [ ] Tất cả: ghi file tiếng Việt bằng Python (utf-8), KHÔNG dùng PowerShell

@@ -15,7 +15,7 @@
 - **Test BE:** pytest
 - **Linter FE:** eslint
 - **Linter BE:** ruff
-- **Last verified:** 2026-07-07 bởi project-init
+- **Last verified:** 2026-07-15 bởi project-init
 
 ## Commands
 - **Dev FE:** `cd frontend && pnpm dev`
