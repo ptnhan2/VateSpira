@@ -1,5 +1,6 @@
 # VateSpira setup script - runs automatically when Agent Manager creates a worktree
-# Copies root .env to nested locations (backend/.env, frontend/.env.local)
+# Copies root .env to frontend/.env.local (Next.js requires .env* in frontend/)
+# Backend reads root .env directly via langgraph.json + conftest.py (no copy needed)
 
 $worktreePath = $env:WORKTREE_PATH
 $repoPath = $env:REPO_PATH
@@ -8,45 +9,20 @@ if (-not $worktreePath) { $worktreePath = $PWD.Path }
 
 Write-Host "=== VateSpira Worktree Setup ==="
 Write-Host "Worktree: $worktreePath"
-Write-Host "Repo root: $repoPath"
 
-# 1. Copy root .env to backend/.env
+# 1. Copy root .env to frontend/.env.local (straight copy - Next.js picks NEXT_PUBLIC_ vars)
 $rootEnv = Join-Path $worktreePath ".env"
-$backendEnv = Join-Path $worktreePath "backend\.env"
-if (Test-Path $rootEnv) {
-    if (-not (Test-Path $backendEnv)) {
-        Copy-Item $rootEnv $backendEnv
-        Write-Host "[OK] Copied .env -> backend/.env"
-    } else {
-        Write-Host "[SKIP] backend/.env already exists"
-    }
+$frontendEnv = Join-Path $worktreePath "frontend\.env.local"
+if ((Test-Path $rootEnv) -and (-not (Test-Path $frontendEnv))) {
+    Copy-Item $rootEnv $frontendEnv
+    Write-Host "[OK] Copied .env -> frontend/.env.local"
+} elseif (Test-Path $frontendEnv) {
+    Write-Host "[SKIP] frontend/.env.local already exists"
 } else {
     Write-Host "[WARN] No root .env found. Create it at repo root with real credentials."
 }
 
-# 2. Create frontend/.env.local from SUPABASE vars
-$frontendEnv = Join-Path $worktreePath "frontend\.env.local"
-if ((Test-Path $rootEnv) -and (-not (Test-Path $frontendEnv))) {
-    $lines = Get-Content $rootEnv
-    $supabaseUrl = ($lines | Where-Object { $_ -match "^SUPABASE_URL=" }) -replace "^SUPABASE_URL=", ""
-    $supabaseKey = ($lines | Where-Object { $_ -match "^SUPABASE_ANON_KEY=" }) -replace "^SUPABASE_ANON_KEY=", ""
-    if ($supabaseUrl -and $supabaseKey) {
-        $envContent = @(
-            "NEXT_PUBLIC_SUPABASE_URL=$supabaseUrl",
-            "NEXT_PUBLIC_SUPABASE_ANON_KEY=$supabaseKey"
-        )
-        $envContent | Set-Content $frontendEnv -Encoding utf8
-        Write-Host "[OK] Created frontend/.env.local from SUPABASE vars"
-    } else {
-        Write-Host "[WARN] No SUPABASE_URL or SUPABASE_ANON_KEY in root .env"
-    }
-} elseif (Test-Path $frontendEnv) {
-    Write-Host "[SKIP] frontend/.env.local already exists"
-} else {
-    Write-Host "[SKIP] No root .env - frontend/.env.local not created"
-}
-
-# 3. Install backend deps
+# 2. Install backend deps
 $backendPath = Join-Path $worktreePath "backend"
 if (Test-Path (Join-Path $backendPath "pyproject.toml")) {
     Write-Host "[INFO] Installing backend deps (uv sync)..."
@@ -56,7 +32,7 @@ if (Test-Path (Join-Path $backendPath "pyproject.toml")) {
     Write-Host "[OK] Backend deps installed"
 }
 
-# 4. Install frontend deps
+# 3. Install frontend deps
 $frontendPath = Join-Path $worktreePath "frontend"
 if (Test-Path (Join-Path $frontendPath "package.json")) {
     Write-Host "[INFO] Installing frontend deps (pnpm install)..."
