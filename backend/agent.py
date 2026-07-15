@@ -118,12 +118,82 @@ class BYOKMiddleware(AgentMiddleware):
 
 
 # Hybrid storage: state (ephemeral, codex scratch) + store (persistent,
-# manuscript/memories/skills). Routes theo path prefix.
+# manuscript/memories/skills). Routes theo path prefix. Manuscript và
+# memories scoped theo namespace factory (multi-tenant isolation, ADR-008);
+# skills dùng global namespace (shared writing techniques).
+
+
+def _namespace_context_value(rt: Any, key: str, default: str) -> str:
+    """Đọc giá trị từ runtime context, fallback graceful khi thiếu.
+
+    Khác với _get_user_id (security boundary cho codex tools — raise khi
+    thiếu user_id), hàm này KHÔNG raise: trả default khi runtime không khả
+    dụng, context None, hoặc key thiếu/rỗng. Dùng cho StoreBackend namespace
+    factory (multi-tenant isolation, ADR-008).
+
+    Args:
+        rt: Runtime (hoặc _NamespaceRuntimeCompat wrapper) injected bởi
+            StoreBackend._get_namespace khi chạy trong graph execution.
+        key: Tên key trong context (vd 'user_id', 'novel_id').
+        default: Giá trị fallback khi key thiếu hoặc context không khả dụng.
+
+    Returns:
+        Giá trị context ép kiểu str, hoặc default.
+    """
+    try:
+        ctx = rt.context
+    except AttributeError:
+        return default
+    if ctx is None:
+        return default
+    if hasattr(ctx, "get"):
+        value = ctx.get(key)
+    else:
+        value = getattr(ctx, key, None)
+    if not value:
+        return default
+    return str(value)
+
+
+def _manuscript_namespace(rt: Any) -> tuple[str, ...]:
+    """Namespace cho /manuscript/ — scope theo user_id + novel_id.
+
+    Trả (user_id, 'novels', novel_id). Fallback graceful (không raise):
+    - user_id thiếu → 'default'
+    - novel_id thiếu → 'draft'
+
+    Args:
+        rt: Runtime injected bởi StoreBackend._get_namespace.
+
+    Returns:
+        Namespace tuple (user_id, 'novels', novel_id) với fallback.
+    """
+    user_id = _namespace_context_value(rt, "user_id", "default")
+    novel_id = _namespace_context_value(rt, "novel_id", "draft")
+    return (user_id, "novels", novel_id)
+
+
+def _memories_namespace(rt: Any) -> tuple[str, ...]:
+    """Namespace cho /memories/ — scope theo user_id.
+
+    Trả (user_id, 'memories'). Fallback graceful (không raise):
+    - user_id thiếu → 'default'
+
+    Args:
+        rt: Runtime injected bởi StoreBackend._get_namespace.
+
+    Returns:
+        Namespace tuple (user_id, 'memories') với fallback.
+    """
+    user_id = _namespace_context_value(rt, "user_id", "default")
+    return (user_id, "memories")
+
+
 backend = CompositeBackend(
     default=StateBackend(),
     routes={
-        "/manuscript/": StoreBackend(),
-        "/memories/": StoreBackend(),
+        "/manuscript/": StoreBackend(namespace=_manuscript_namespace),
+        "/memories/": StoreBackend(namespace=_memories_namespace),
         "/skills/": StoreBackend(),
     },
 )
