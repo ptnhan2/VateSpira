@@ -6,7 +6,7 @@
 
 ## Corrections log (2026-07-07, sau feedback)
 
-- **Providers (Section 1.4, ADR-005):** MVP ưu tiên **Gemini / DeepSeek / ZAI (Zhipu)** (user có key). Full = goal dài hạn. DeepSeek dùng `deepseek-chat` (V3, tool calling OK), KHÔNG dùng `deepseek-reasoner` (R1 không hỗ trợ tool). ZAI qua `openrouter:z-ai/glm-5.2` hoặc OpenAI-compatible.
+- **Providers (Section 1.4, ADR-005):** MVP ưu tiên **Gemini / DeepSeek / ZAI (Zhipu)** (user có key). Full = goal dài hạn. DeepSeek dùng `deepseek-v4-pro` (V3, tool calling OK), KHÔNG dùng `deepseek-reasoner` (R1 không hỗ trợ tool). ZAI qua `openrouter:z-ai/glm-5.2` hoặc OpenAI-compatible.
 - **LangStack (Section 2.2):** 3 thứ KHÔNG lồng nhau. Quan hệ đúng: deepagents →(chạy trên)→ LangGraph; LangSmith →(host/observe, ở ngoài)→ deepagents app. Diagram tách ra là đúng (khác vai trò), ghi rõ quan hệ.
 - **Design (Section 8, ADR-007):** Direction **A · Raw Elegance** LOCKED (iA Writer lineage). Light: paper #fbfaf6 / ink #1a1a1a / vermilion #a93226. Dark: ink #1a1a1a / cream #e8e4dc / terracotta #c47a5a. Typography: Newsreader + Inter + JetBrains Mono. Chi tiết: [`docs/design-exploration.html`](design-exploration.html).
 - **User Flows (Section 4):** Rewrite theo research NovelCrafter — vòng lặp 4 pha Planning↔Manuscript↔Codex↔Review. MVP slice: UF-1 setup, UF-2 codex (progressions+relations), UF-4 write (beats+HITL+rubric), UF-6 consistency, UF-8 extract-from-chat. Thêm: Scene Beats, Progressions, Appearance Heatmap. Chi tiết trong tour HTML Chương 5.
@@ -388,7 +388,7 @@ PR -> lint + typecheck + unit test + build
 | deepagents | 0.6.12 | harness engine |
 | LangGraph + LangSmith | latest | runtime + deploy + eval |
 | Supabase | latest | Postgres 15+, Auth, Storage, Realtime |
-| Models | deepseek-chat (default), claude-sonnet-4-6, claude-opus-4-7, gpt-5.5, gemini-2.5-flash, openrouter:*, ollama:* | BYOK |
+| Models | deepseek-chat (default agent) + deepseek-v4-pro (eval), claude-sonnet-4-6, claude-opus-4-7, gpt-5.5, gemini-2.5-flash, openrouter:*, ollama:* | BYOK |
 
 ## Appendix B: deepagents extension points (BUILD ON TOP)
 | Extension point | What we BUILD | deepagents provides |
