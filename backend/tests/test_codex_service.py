@@ -89,6 +89,26 @@ def test_create_novel_defaults_save_the_cat():
     assert payload["tense"] is None
 
 
+# --- create_novel: genre ---
+
+def test_create_novel_includes_genre_in_payload():
+    """create_novel gửi genre trong payload khi được cung cấp."""
+    client, builder = _make_supabase_mock(data=[{"id": "n1"}])
+    with patch.object(codex_service, "_get_client", return_value=client):
+        codex_service.create_novel(user_id="u1", title="T", genre="fantasy")
+    payload = builder.insert.call_args[0][0]
+    assert payload["genre"] == "fantasy"
+
+
+def test_create_novel_genre_defaults_none():
+    """create_novel default genre=None khi không cung cấp (DB nullable)."""
+    client, builder = _make_supabase_mock(data=[{"id": "n1"}])
+    with patch.object(codex_service, "_get_client", return_value=client):
+        codex_service.create_novel(user_id="u1", title="T")
+    payload = builder.insert.call_args[0][0]
+    assert payload["genre"] is None
+
+
 # --- list_novels ---
 
 def test_list_novels_filters_by_user_id():
