@@ -1,8 +1,10 @@
-# VateSpira setup script — runs automatically when Agent Manager creates a worktree
+# VateSpira setup script - runs automatically when Agent Manager creates a worktree
 # Copies root .env to nested locations (backend/.env, frontend/.env.local)
 
 $worktreePath = $env:WORKTREE_PATH
 $repoPath = $env:REPO_PATH
+
+if (-not $worktreePath) { $worktreePath = $PWD.Path }
 
 Write-Host "=== VateSpira Worktree Setup ==="
 Write-Host "Worktree: $worktreePath"
@@ -20,34 +22,28 @@ if (Test-Path $rootEnv) {
     }
 } else {
     Write-Host "[WARN] No root .env found. Create it at repo root with real credentials."
-    Write-Host "       See backend/.env.example for required vars."
 }
 
-# 2. Copy NEXT_PUBLIC_ vars to frontend/.env.local
+# 2. Create frontend/.env.local from SUPABASE vars
 $frontendEnv = Join-Path $worktreePath "frontend\.env.local"
-if (Test-Path $rootEnv) {
-    $publicVars = Get-Content $rootEnv | Where-Object { $_ -match "^NEXT_PUBLIC_" }
-    if ($publicVars -and -not (Test-Path $frontendEnv)) {
-        $publicVars | Set-Content $frontendEnv -Encoding utf8
-        Write-Host "[OK] Created frontend/.env.local with NEXT_PUBLIC_ vars"
-    } elseif (Test-Path $frontendEnv) {
-        Write-Host "[SKIP] frontend/.env.local already exists"
+if ((Test-Path $rootEnv) -and (-not (Test-Path $frontendEnv))) {
+    $lines = Get-Content $rootEnv
+    $supabaseUrl = ($lines | Where-Object { $_ -match "^SUPABASE_URL=" }) -replace "^SUPABASE_URL=", ""
+    $supabaseKey = ($lines | Where-Object { $_ -match "^SUPABASE_ANON_KEY=" }) -replace "^SUPABASE_ANON_KEY=", ""
+    if ($supabaseUrl -and $supabaseKey) {
+        $envContent = @(
+            "NEXT_PUBLIC_SUPABASE_URL=$supabaseUrl",
+            "NEXT_PUBLIC_SUPABASE_ANON_KEY=$supabaseKey"
+        )
+        $envContent | Set-Content $frontendEnv -Encoding utf8
+        Write-Host "[OK] Created frontend/.env.local from SUPABASE vars"
     } else {
-        # No NEXT_PUBLIC_ vars in root .env — create from Supabase vars
-        $supabaseUrl = (Get-Content $rootEnv | Select-String "SUPABASE_URL=(.+)").Matches.Groups[1].Value
-        $supabaseKey = (Get-Content $rootEnv | Select-String "SUPABASE_ANON_KEY=(.+)").Matches.Groups[1].Value
-        if ($supabaseUrl -and $supabaseKey) {
-            @"
-NEXT_PUBLIC_SUPABASE_URL=$supabaseUrl
-NEXT_PUBLIC_SUPABASE_ANON_KEY=$supabaseKey
-"@ | Set-Content $frontendEnv -Encoding utf8
-            Write-Host "[OK] Created frontend/.env.local from SUPABASE_URL + SUPABASE_ANON_KEY"
-        } else {
-            Write-Host "[WARN] No NEXT_PUBLIC_ or SUPABASE vars in root .env"
-        }
+        Write-Host "[WARN] No SUPABASE_URL or SUPABASE_ANON_KEY in root .env"
     }
+} elseif (Test-Path $frontendEnv) {
+    Write-Host "[SKIP] frontend/.env.local already exists"
 } else {
-    Write-Host "[SKIP] No root .env — frontend/.env.local not created"
+    Write-Host "[SKIP] No root .env - frontend/.env.local not created"
 }
 
 # 3. Install backend deps
