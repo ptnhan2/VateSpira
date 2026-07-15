@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff>=0.5", "pytest>=8"]
+dev = ["ruff>=0.5", "pytest>=8", "python-dotenv>=1.0"]
 
 [tool.ruff]
 line-length = 100

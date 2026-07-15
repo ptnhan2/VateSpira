@@ -3,12 +3,18 @@
 Pytest auto-adds the directory containing conftest.py to sys.path,
 making sibling modules (codex_service, agent) importable from tests.
 
-Also sets a dummy DEEPSEEK_API_KEY so that `import agent` (which calls
-`create_deep_agent(model="deepseek:deepseek-chat")`) can init
-the ChatDeepSeek model without a real key. Tests mock all
-model calls — the dummy key is never used for actual API requests.
+Also loads root .env (source of truth) via python-dotenv so that
+real credentials are available for E2E tests. Sets a dummy
+DEEPSEEK_API_KEY as fallback if not in .env.
 """
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load root .env (source of truth, 2 levels up from backend/)
+_root_env = Path(__file__).parent.parent / ".env"
+load_dotenv(_root_env)
 
 os.environ.setdefault("DEEPSEEK_API_KEY", "test-dummy-not-real")

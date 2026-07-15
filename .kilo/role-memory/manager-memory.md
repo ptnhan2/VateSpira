@@ -63,3 +63,10 @@
 1. [ ] Manager: verify AC interpretation thật khi review plan (không tick box 8/8)
 2. [ ] Worker: PR body phải có /local-review: PASS + VISUAL PROOF section
 3. [ ] Tất cả: ghi file tiếng Việt bằng Python (utf-8), KHÔNG dùng PowerShell
+
+
+### [2026-07-15] Worker prompt phải chỉ định agent type
+- **Pitfall:** Manager sinh Worker prompt nhưng không nói User switch sang agent nào (worker vs fe-dev vs reviewer).
+- **Impact:** User paste prompt vào sai agent → quy trình sai (fe-dev task chạy worker flow, hoặc ngược lại).
+- **Fix:** Mỗi Worker prompt phải ghi rõ: "switch to agent `worker`" hoặc "switch to agent `fe-dev`". Template prompt thêm dòng: "**Agent:** `worker` / `fe-dev`"
+- **Ghi nhớ:** worker = backend/Python/script, fe-dev = frontend/UI/React/Next.js. Reviewer = review only (Manager gọi qua Task tool, User không cần switch).

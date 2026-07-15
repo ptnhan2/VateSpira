@@ -16,6 +16,11 @@
 - **Linter FE:** eslint
 - **Linter BE:** ruff
 - **Last verified:** 2026-07-15 bởi project-init
+- **Env files:**
+  - `.env` (root) = source of truth, ALL credentials (gitignored, NOT committed)
+  - `backend/.env` + `frontend/.env.local` = auto-copy từ root `.env` bởi `.kilo/setup-script.ps1` khi tạo worktree
+  - `backend/.env.example` = template placeholder (committed)
+  - **Tất cả task (BE + FE) → check root `.env` có real credentials không**
 
 ## Commands
 - **Dev FE:** `cd frontend && pnpm dev`
