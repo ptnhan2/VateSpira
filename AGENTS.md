@@ -5,7 +5,7 @@
 ## Techstack
 - **Package Manager FE:** pnpm
 - **Package Manager BE:** uv (Python)
-- **Frontend:** Next.js 16 (App Router) + React 19.2 + TipTap ^3.27.3 (ProseMirror) + Tailwind v4.3.2 + @supabase/supabase-js ^2.110.3
+- **Frontend:** Next.js 16 (App Router) + React 19.2 + TipTap ^3.27.3 (ProseMirror) + Tailwind v4.3.2 + @supabase/supabase-js ^2.110.3 + @langchain/langgraph-sdk
 - **Backend:** Python 3.13 + FastAPI + deepagents 0.6.12 + LangGraph
 - **Database:** Supabase Postgres (+ Auth + Storage)
 - **Agent runtime:** LangSmith (LangGraph Platform) — deploy + stream + tracing + eval
@@ -17,6 +17,8 @@
 - **Linter BE:** ruff
 - **Last verified:** 2026-07-15 bởi project-init
 - **Env files:**
+  - LANGSMITH_API_URL (LangGraph dev server URL, dev: http://localhost:2024)
+  - VATESPIRA_DEV_USER_ID / EMAIL / PASSWORD (dev user for E2E testing)
   - `.env` (root) = source of truth, ALL credentials (gitignored, NOT committed)
   - `backend/.env` + `frontend/.env.local` = auto-copy từ root `.env` bởi `.kilo/setup-script.ps1` khi tạo worktree
   - `backend/.env.example` = template placeholder (committed)

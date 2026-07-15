@@ -12,6 +12,6 @@
 | UF-4: Write scene (HITL + rubric) | #6 | not-started | docs/ARCHITECTURE.md Section 4 | - |
 | UF-5: Consistency check | #7 | not-started | docs/ARCHITECTURE.md Section 4 | - |
 | UF-6: Extract from chat (codex growth) | #8 | not-started | docs/ARCHITECTURE.md Section 4 | - |
-| Follow-up: Wire FE novel creation through backend agent API | #12 | not-started | - | - |
+| Follow-up: Wire FE novel creation through backend agent API | #12 | done | - | - |
 
 Status: not-started -> designed -> in-progress -> done -> deployed
