@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import type { Beat } from "@/lib/beats";
+import type { Scene } from "@/lib/scenes";
 
 /**
  * Holder hoisted — mock 3 hàm async của @/lib/beats. Constants (STC_BEATS,
@@ -12,6 +13,18 @@ const { listBeatsMock, updateBeatMock, createBeatMock } = vi.hoisted(() => ({
   listBeatsMock: vi.fn(),
   updateBeatMock: vi.fn(),
   createBeatMock: vi.fn(),
+}));
+
+const { listScenesMock, createSceneMock, updateSceneMock } = vi.hoisted(() => ({
+  listScenesMock: vi.fn(),
+  createSceneMock: vi.fn(),
+  updateSceneMock: vi.fn(),
+}));
+
+vi.mock("@/lib/scenes", () => ({
+  listScenes: listScenesMock,
+  createScene: createSceneMock,
+  updateScene: updateSceneMock,
 }));
 
 vi.mock("@/lib/beats", async () => {
@@ -55,11 +68,40 @@ function filledBeat(n: number, name: string, content: string): Beat {
   };
 }
 
+/**
+ * Tạo Scene mẫu đã có trong DB cho test.
+ */
+function makeScene(
+  id: string,
+  beatId: string,
+  sceneNumber: number,
+  title: string,
+  summary: string,
+): Scene {
+  return {
+    id,
+    novel_id: "novel-test",
+    beat_id: beatId,
+    scene_number: sceneNumber,
+    title,
+    summary,
+    status: "empty",
+    sort_order: sceneNumber,
+    created_at: "2026-07-16T00:00:00Z",
+    updated_at: "2026-07-16T00:00:00Z",
+  };
+}
+
 describe("Plot page (beat sheet Save the Cat)", () => {
   beforeEach(() => {
     listBeatsMock.mockReset();
     updateBeatMock.mockReset();
     createBeatMock.mockReset();
+    listScenesMock.mockReset();
+    createSceneMock.mockReset();
+    updateSceneMock.mockReset();
+    // Existing tests không quan tâm scenes → mặc định rỗng giữ xanh.
+    listScenesMock.mockResolvedValue([]);
   });
 
   it("render header + back link về dashboard", async () => {
@@ -171,5 +213,104 @@ describe("Plot page (beat sheet Save the Cat)", () => {
     );
     expect(dot1?.getAttribute("data-status")).toBe("filled");
     expect(dot2?.getAttribute("data-status")).toBe("empty");
+  });
+
+  // === Scene expansion tests (UF-3b) ===
+
+  it("expand beat → hiển thị scenes thuộc beat đó", async () => {
+    listBeatsMock.mockResolvedValue([
+      filledBeat(1, "Opening Image", "nội dung"),
+    ]);
+    listScenesMock.mockResolvedValue([
+      makeScene("s1", "b1", 1, "Sương mù", "Elena đi bộ"),
+      makeScene("s2", "b1", 2, "Bức thư", "Mực nhòe"),
+    ]);
+    render(<PlotPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("expand-1"));
+
+    expect(screen.getByLabelText("Tiêu đề scene 1")).toHaveValue("Sương mù");
+    expect(screen.getByLabelText("Tiêu đề scene 2")).toHaveValue("Bức thư");
+  });
+
+  it("chevron hiển thị số scene thuộc beat", async () => {
+    listBeatsMock.mockResolvedValue([
+      filledBeat(1, "Opening Image", "nội dung"),
+    ]);
+    listScenesMock.mockResolvedValue([
+      makeScene("s1", "b1", 1, "Scene 1", ""),
+      makeScene("s2", "b1", 2, "Scene 2", ""),
+    ]);
+    render(<PlotPage />);
+    await waitFor(() => expect(listBeatsMock).toHaveBeenCalled());
+    expect(screen.getByTestId("expand-1")).toHaveTextContent("2");
+    expect(screen.getByTestId("expand-2")).toHaveTextContent("0");
+  });
+
+  it("add scene → gọi createScene + hiện SceneCard mới", async () => {
+    listBeatsMock.mockResolvedValue([
+      filledBeat(1, "Opening Image", "nội dung"),
+    ]);
+    listScenesMock.mockResolvedValue([]);
+    createSceneMock.mockResolvedValue(makeScene("s1", "b1", 1, "", ""));
+    render(<PlotPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("expand-1"));
+    fireEvent.click(screen.getByText("+ Thêm scene"));
+
+    await waitFor(() =>
+      expect(createSceneMock).toHaveBeenCalledWith(
+        "novel-test",
+        "b1",
+        1,
+        "",
+        "",
+      ),
+    );
+    expect(screen.getByLabelText("Tiêu đề scene 1")).toBeInTheDocument();
+  });
+
+  it("edit scene title + blur → gọi updateScene", async () => {
+    listBeatsMock.mockResolvedValue([
+      filledBeat(1, "Opening Image", "nội dung"),
+    ]);
+    listScenesMock.mockResolvedValue([
+      makeScene("s1", "b1", 1, "cũ", "tóm tắt cũ"),
+    ]);
+    updateSceneMock.mockResolvedValue(
+      makeScene("s1", "b1", 1, "mới", "tóm tắt cũ"),
+    );
+    render(<PlotPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("expand-1"));
+    const titleInput = screen.getByLabelText("Tiêu đề scene 1");
+    fireEvent.change(titleInput, { target: { value: "mới" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() =>
+      expect(updateSceneMock).toHaveBeenCalledWith("s1", "mới", "tóm tắt cũ"),
+    );
+  });
+
+  it("beat KHÔNG có id → expand không có nút Add scene", async () => {
+    listBeatsMock.mockResolvedValue([]);
+    listScenesMock.mockResolvedValue([]);
+    render(<PlotPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nội dung Theme Stated")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("expand-2"));
+    expect(screen.queryByText("+ Thêm scene")).not.toBeInTheDocument();
+    expect(screen.getByText(/Viết nội dung beat/)).toBeInTheDocument();
   });
 });
