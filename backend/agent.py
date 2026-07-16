@@ -24,6 +24,24 @@ from langgraph.prebuilt import ToolRuntime
 
 import codex_service
 
+SAVE_THE_CAT_BEATS = [
+    "Opening Image",       # 1. Khung hình đầu, thiết lập tone
+    "Theme Stated",        # 2. Chủ đề được nhắc đến
+    "Set-Up",              # 3. Giới thiệu nhân vật, thế giới
+    "Catalyst",            # 4. Sự kiện kích hoạt
+    "Debate",              # 5. Nhân vật do dự
+    "Break into Two",      # 6. Nhân vật bước vào thế giới mới
+    "B Story",             # 7. Tuyến phụ (thường là tình cảm)
+    "Fun & Games",         # 8. Promise of premise — phần thú vị nhất
+    "Midpoint",            # 9. Điểm giữa — false victory/defeat
+    "Bad Guys Close In",   # 10. Kẻ thù phản công
+    "All Is Lost",         # 11. Điểm thấp nhất
+    "Dark Night of Soul",  # 12. Nhân vật suy sụp
+    "Break into Three",    # 13. Giải pháp mới — bước vào Act Three
+    "Finale",              # 14. Cao trào — giải quyết
+    "Final Image",         # 15. Khung hình cuối — đối lập Opening Image
+]
+
 WRITING_COLLABORATOR_PROMPT = """\
 You are VateSpira, a writing collaborator for novelists.
 
@@ -241,6 +259,33 @@ def _get_user_id(runtime: ToolRuntime) -> str:
     return str(user_id)
 
 
+def _get_novel_id(runtime: ToolRuntime) -> str:
+    """Trích xuất novel_id từ ToolRuntime context.
+
+    Args:
+        runtime: ToolRuntime injected bởi framework, chứa context.
+
+    Returns:
+        novel_id string từ context.
+
+    Raises:
+        ValueError: Nếu context hoặc novel_id không có (security boundary).
+    """
+    ctx = runtime.context
+    if ctx is None:
+        raise ValueError(
+            "Runtime context không có novel_id — không thể thực hiện thao tác beat."
+        )
+    novel_id = (
+        ctx.get("novel_id") if hasattr(ctx, "get") else getattr(ctx, "novel_id", None)
+    )
+    if not novel_id:
+        raise ValueError(
+            "Runtime context không có novel_id — không thể thực hiện thao tác beat."
+        )
+    return str(novel_id)
+
+
 @tool
 def create_novel(
     title: str,
@@ -279,6 +324,15 @@ def create_novel(
         tense=tense or None,
         technique=technique,
     )
+    # Init 15 Save the Cat beats (best-effort — không crash create_novel nếu fail)
+    beats_init = []
+    try:
+        beats_init = codex_service.init_beats(
+            novel_id=result["id"], beat_names=SAVE_THE_CAT_BEATS
+        )
+    except Exception as e:
+        beats_init = [{"error": str(e)}]
+    result["beats_init"] = beats_init
     # Scaffold manuscript + memory files (best-effort)
     scaffold = []
     for path, content in [
@@ -328,10 +382,50 @@ def get_novel(novel_id: str, runtime: ToolRuntime) -> str:
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
+@tool
+def list_beats(runtime: ToolRuntime) -> str:
+    """Liệt kê 15 Save the Cat beats của novel hiện tại.
+
+    Trả về danh sách 15 beat slots với beat_number, beat_name, content,
+    status. Novel_id được lấy từ runtime context.
+
+    Returns:
+        JSON string chứa list các beat record.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    result = codex_service.list_beats(novel_id=novel_id, user_id=user_id)
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def update_beat(beat_number: int, content: str, runtime: ToolRuntime) -> str:
+    """Cập nhật content cho một beat theo số thứ tự (1-15).
+
+    Args:
+        beat_number: Số thứ tự beat (1-15).
+        content: Nội dung beat (mô tả cảnh/plot point).
+
+    Returns:
+        JSON string chứa beat record đã update, hoặc error nếu không tìm thấy.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    result = codex_service.update_beat(
+        novel_id=novel_id, beat_number=beat_number, content=content, user_id=user_id
+    )
+    if result is None:
+        return json.dumps(
+            {"error": f"Beat {beat_number} không tìm thấy hoặc novel không thuộc user."},
+            ensure_ascii=False,
+        )
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
 agent = create_deep_agent(
     model="deepseek:deepseek-chat",  # MVP priority #1; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
-    tools=[create_novel, list_novels, get_novel],
+    tools=[create_novel, list_novels, get_novel, list_beats, update_beat],
     middleware=[BYOKMiddleware()],
     backend=backend,
     permissions=permissions,
