@@ -13,7 +13,7 @@ See: docs/ARCHITECTURE.md
 import json
 from typing import Any
 
-from deepagents import FilesystemPermission, create_deep_agent
+from deepagents import FilesystemPermission, RubricMiddleware, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from deepagents.profiles.provider.provider_profiles import apply_provider_profile
 from langchain.agents.middleware.types import AgentMiddleware
@@ -57,6 +57,72 @@ manuscript (chapters via file tools), memory (novel bible), and skills (writing 
 - Follow scene beats if provided.
 - Match the author's voice — don't impose your own style.
 - Show, don't tell. Cut clutter. Respect the author's words.
+
+## Chapter Writing
+When asked to write a chapter or scene prose:
+1. Read context: call get_novel, list_beats, list_scenes, and read_file \
+/memories/novel-bible.md to gather character voice, POV, tense, and plot context.
+2. Write prose: use the built-in write_file tool to write the chapter to \
+/manuscript/chapters/<filename>.md. This triggers HITL — the user must approve \
+before the file is written.
+3. Save metadata: after writing, call save_chapter_metadata with the chapter \
+number, title, and content. This records the chapter in the database (title, \
+word_count, status='draft') without writing a file.
+4. Self-evaluation: RubricMiddleware will automatically evaluate your written \
+chapter against 5 quality criteria (beat alignment, voice/POV/tense, \
+show-don't-tell, character consistency, pacing). If revision is needed, you \
+will be asked to revise — address the feedback and re-write.
+"""
+
+
+CHAPTER_RUBRIC_PROMPT = """\
+You are a chapter quality grader for a novel-writing assistant. Evaluate the \
+agent's transcript (including any written chapter prose) against the rubric \
+criteria below. The rubric is provided in the user message; trust only the \
+rubric for what "done" means.
+
+## Evaluation Criteria
+
+Evaluate each criterion as passed (true) or failed (false), with a specific \
+gap description when failed:
+
+1. Beat Alignment — Does the prose address and expand the beat/scene it is \
+supposed to cover? The chapter should advance the plot point defined by the \
+target beat. If the prose ignores or contradicts the beat, this fails.
+
+2. Voice / POV / Tense — Does the prose match the novel's configured point \
+of view and tense? If the novel specifies first-person past tense, the prose \
+must use first-person past tense consistently. Inconsistency fails this \
+criterion.
+
+3. Show Don't Tell — Does the prose use scene, action, dialogue, and sensory \
+detail rather than flat exposition? Heavy telling (summary statements without \
+dramatization) fails this criterion. Minor exposition is acceptable; dominant \
+telling fails.
+
+4. Character Consistency — Do characters act and speak consistently with \
+their codex entries (personality, arc, voice)? If a character behaves \
+contradictorily to established traits without narrative justification, this \
+fails.
+
+5. Pacing — Is the chapter appropriate in length and rhythm for the scene it \
+covers? A critical scene rushed in two paragraphs or a minor scene dragging \
+for pages both fail. The rhythm should serve the story beat.
+
+## Verdict Rules
+
+- Return "satisfied" only if ALL criteria pass.
+- Return "needs_revision" if ANY criterion fails but the prose is salvageable \
+(revisable, not fundamentally broken).
+- Return "failed" if the prose is fundamentally broken (wrong beat entirely, \
+incomprehensible, or structurally unsound) — not salvageable by revision.
+
+## Output
+
+Return a GraderResponse with:
+- result: one of "satisfied", "needs_revision", "failed"
+- explanation: concise summary of the evaluation (2-3 sentences)
+- criteria: list of {name, passed (bool), gap (str)} for each of the 5 criteria
 """
 
 
@@ -226,7 +292,6 @@ permissions = [
 ]
 
 # TODO: add skills=["/skills/"], memory=["/memories/novel-bible.md"]
-# TODO: add RubricMiddleware with chapter-rubric
 
 
 def _get_user_id(runtime: ToolRuntime) -> str:
@@ -516,11 +581,78 @@ def update_scene(
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
+@tool
+def save_chapter_metadata(
+    chapter_number: int,
+    title: str,
+    content: str,
+    runtime: ToolRuntime,
+) -> str:
+    """Lưu chapter metadata (title, number, word_count, status) vào chapters table.
+
+    Gọi SAU khi đã viết prose qua built-in write_file. Word_count tự động
+    tính từ content. Nếu chapter với số thứ tự này đã tồn tại → update;
+    nếu chưa → insert mới. Prose (nội dung) KHÔNG được lưu bởi tool này —
+    prose nằm trong StoreBackend qua write_file (HITL).
+
+    Args:
+        chapter_number: Số thứ tự chapter (1, 2, 3, ...).
+        title: Tiêu đề chapter.
+        content: Nội dung prose (dùng để calc word_count, không lưu vào DB).
+
+    Returns:
+        JSON string chứa chapter record, hoặc error nếu novel không thuộc user.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    result = codex_service.create_chapter(
+        novel_id=novel_id,
+        chapter_number=chapter_number,
+        title=title,
+        content=content,
+        user_id=user_id,
+    )
+    if result is None:
+        return json.dumps(
+            {"error": "Không thể lưu chapter — novel không thuộc user."},
+            ensure_ascii=False,
+        )
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def list_chapters(runtime: ToolRuntime) -> str:
+    """Liệt kê tất cả chapters của novel hiện tại, sắp xếp theo số thứ tự.
+
+    Trả về danh sách các chapter (id, number, title, status, word_count).
+    Novel_id được lấy từ runtime context.
+
+    Returns:
+        JSON string chứa list các chapter record.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    result = codex_service.list_chapters(novel_id=novel_id, user_id=user_id)
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
 agent = create_deep_agent(
     model="deepseek:deepseek-chat",  # MVP priority #1; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
-    tools=[create_novel, list_novels, get_novel, list_beats, update_beat, list_scenes, create_scene, update_scene],
-    middleware=[BYOKMiddleware()],
+    tools=[
+        create_novel, list_novels, get_novel,
+        list_beats, update_beat,
+        list_scenes, create_scene, update_scene,
+        save_chapter_metadata, list_chapters,
+    ],
+    middleware=[
+        BYOKMiddleware(),
+        RubricMiddleware(
+            model="deepseek:deepseek-chat",
+            system_prompt=CHAPTER_RUBRIC_PROMPT,
+            max_iterations=3,
+        ),
+    ],
     backend=backend,
     permissions=permissions,
 )
