@@ -164,7 +164,10 @@ function NovelCard({ novel }: { novel: Novel }) {
     : created.toLocaleDateString("vi-VN");
 
   return (
-    <article className="flex flex-col justify-between rounded-lg border border-line bg-surface p-5 transition-colors hover:border-vermilion dark:hover:border-terracotta">
+    <Link
+      href={`/novels/${novel.id}/plot`}
+      className="flex flex-col justify-between rounded-lg border border-line bg-surface p-5 transition-colors hover:border-vermilion dark:hover:border-terracotta"
+    >
       <div>
         <h2 className="font-serif text-lg font-semibold text-ink">
           {novel.title}
@@ -175,7 +178,7 @@ function NovelCard({ novel }: { novel: Novel }) {
         </div>
       </div>
       <p className="mt-4 text-xs text-muted">Tạo ngày {dateLabel}</p>
-    </article>
+    </Link>
   );
 }
 
