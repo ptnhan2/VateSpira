@@ -16,6 +16,18 @@ from langgraph.prebuilt import ToolRuntime
 import agent
 
 
+@pytest.fixture(autouse=True)
+def _mock_init_beats():
+    """Mock init_beats cho tất cả tests.
+
+    create_novel tool giờ gọi codex_service.init_beats (best-effort).
+    Nếu không mock → test sẽ gọi real Supabase (slow + network I/O).
+    Mock return [] cho tất cả tests; test_beats.py verify init_beats riêng.
+    """
+    with patch.object(agent.codex_service, "init_beats", return_value=[]):
+        yield
+
+
 # --- Helpers ---
 
 def _make_runtime(user_id=None):
@@ -203,8 +215,10 @@ def test_get_novel_raises_without_user_id():
 
 # --- tools wiring ---
 
-def test_all_three_tools_are_base_tool_instances():
-    """3 tools là BaseTool instances, agent compiles without error."""
+def test_all_five_tools_are_base_tool_instances():
+    """5 tools (create_novel, list_novels, get_novel, list_beats, update_beat) là BaseTool."""
     assert isinstance(agent.create_novel, BaseTool)
     assert isinstance(agent.list_novels, BaseTool)
     assert isinstance(agent.get_novel, BaseTool)
+    assert isinstance(agent.list_beats, BaseTool)
+    assert isinstance(agent.update_beat, BaseTool)
