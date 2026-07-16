@@ -9,7 +9,7 @@
 - **Providers (Section 1.4, ADR-005):** MVP ưu tiên **Gemini / DeepSeek / ZAI (Zhipu)** (user có key). Full = goal dài hạn. DeepSeek dùng `deepseek-v4-pro` (V3, tool calling OK), KHÔNG dùng `deepseek-reasoner` (R1 không hỗ trợ tool). ZAI qua `openrouter:z-ai/glm-5.2` hoặc OpenAI-compatible.
 - **LangStack (Section 2.2):** 3 thứ KHÔNG lồng nhau. Quan hệ đúng: deepagents →(chạy trên)→ LangGraph; LangSmith →(host/observe, ở ngoài)→ deepagents app. Diagram tách ra là đúng (khác vai trò), ghi rõ quan hệ.
 - **Design (Section 8, ADR-007):** Direction **A · Raw Elegance** LOCKED (iA Writer lineage). Light: paper #fbfaf6 / ink #1a1a1a / vermilion #a93226. Dark: ink #1a1a1a / cream #e8e4dc / terracotta #c47a5a. Typography: Newsreader + Inter + JetBrains Mono. Chi tiết: [`docs/design-exploration.html`](design-exploration.html).
-- **User Flows (Section 4):** Rewrite theo research NovelCrafter — vòng lặp 4 pha Planning↔Manuscript↔Codex↔Review. MVP slice: UF-1 setup, UF-2 codex (progressions+relations), UF-4 write (beats+HITL+rubric), UF-6 consistency, UF-8 extract-from-chat. Thêm: Scene Beats, Progressions, Appearance Heatmap. Chi tiết trong tour HTML Chương 5.
+- **User Flows (Section 4):** Rewrite theo research NovelCrafter — vòng lặp 4 pha Planning↔Manuscript↔Codex↔Review. MVP slice: UF-1 setup, UF-2 plot skeleton (Save the Cat 15 beats), UF-3 scene beats, UF-4 write scene (HITL+rubric), UF-5 consistency, UF-6 extract-from-chat. Thêm: Scene Beats, Progressions, Appearance Heatmap. Chi tiết trong tour HTML Chương 5.
 - **Wireframes (Section 8.3):** Bỏ ASCII → low-fi deck [`docs/wireframes/wireframes-deck.html`](wireframes/wireframes-deck.html) (6 frame) + hi-fi [`docs/wireframes/writing-hifi.html`](wireframes/writing-hifi.html) (Writing view, Direction A).
 
 ---
@@ -105,7 +105,9 @@ Browser (Next.js) ──SSE──► LangSmith (agent runtime) ──► deepage
 
 ### 3.1 Codex (structured — Postgres tables, RLS per user+novel)
 ```
-novels (id, user_id, title, language, created_at, ...)
+novels (id, user_id, title, language, genre, pov, tense, technique, created_at, ...)
+beats (id, novel_id, beat_number 1-15, beat_name, content, status, created_at, updated_at)
+       -- Save the Cat 15 beat slots per novel; UNIQUE(novel_id, beat_number); RLS via novels.user_id
 characters (id, novel_id, name, age, personality, appearance, arc, pov,
             color_theme, portfolio_data JSONB, ...)
 locations (id, novel_id, name, description, geography, ...)
@@ -124,13 +126,14 @@ RLS: `user_id = auth.uid()` trên `novels`; codex tables join novel → inherit 
 /manuscript/outline.md
 /manuscript/notes/*.md
 ```
-Lưu qua LangGraph store (Postgres-backed), namespace `(user_id, "novels", novel_id, "manuscript")`.
+Lưu qua LangGraph store (Postgres-backed), namespace `(user_id, "novels", novel_id)`.
 
 ### 3.3 Memory (AGENTS.md files — StoreBackend)
 ```
 /memories/novel-bible.md      -- tóm tắt thế giới, theme, tone
 /memories/author-prefs.md     -- phong cách, preference học được
 ```
+Namespace `(user_id, "memories")`.
 
 ### 3.4 Skills (SKILL.md files — StoreBackend, global + project)
 ```
@@ -155,11 +158,12 @@ eval_runs (id, scenario_id, model, scores JSONB, created_at)  -- offline eval
 ## 4. User Flows
 
 ### P1 (MVP)
-- **UF-1:** User tạo novel project → system scaffold manuscript + codex + memory.
-- **UF-2:** User chat "phát triển nhân vật chính Elena" → agent gọi `create_character` + discuss → auto-populate codex → UI character portfolio render.
-- **UF-3:** User chat "viết chương 1 dựa codex" → agent `read_file` codex context + `write_file` manuscript → HITL approve → chapter saved → RubricMiddleware self-eval (chapter-rubric) → revise if needed.
-- **UF-4:** User chat "check consistency chương 5 vs codex" → agent `check_consistency` tool → report plot holes → suggest edits → HITL approve.
-- **UF-5:** User mở Character tab → xem portfolio (auto-designed, màu riêng Elena) + edit trực tiếp → agent thấy update ở turn sau.
+- **UF-1:** User tạo novel project → system scaffold manuscript + codex + memory + init 15 StC beats.
+- **UF-2:** User chat "phát triển plot" → agent `list_beats` + `update_beat` → 15 beat slots filled → UI beat sheet render.
+- **UF-3:** User chat "expand beat 8 thành scenes" → agent tạo scene beats từ beat → UI scene list.
+- **UF-4:** User chat "viết scene 1" → agent read codex + write manuscript → HITL approve → RubricMiddleware self-eval → revise if needed.
+- **UF-5:** User chat "check consistency chương 5 vs codex" → agent `check_consistency` tool → report plot holes → suggest edits → HITL approve.
+- **UF-6:** User chat → agent extract characters/locations/lore → auto-populate codex → UI portfolio render.
 
 ### P2
 - Multi-tab parallel chat (subagents), timeline chart view, skills library expand, cross-session memory.

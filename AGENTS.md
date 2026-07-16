@@ -15,10 +15,11 @@
 - **Test BE:** pytest
 - **Linter FE:** eslint
 - **Linter BE:** ruff
-- **Last verified:** 2026-07-15 bởi project-init
+- **Last verified:** 2026-07-16 bởi doc-sync (UF-2 merge)
 - **Env files:**
   - LANGSMITH_API_URL (LangGraph dev server URL, dev: http://localhost:2024)
   - VATESPIRA_DEV_USER_ID / EMAIL / PASSWORD (dev user for E2E testing)
+  - SUPABASE_DB_PASSWORD (Supabase Postgres direct connection, for migrations via psycopg2)
   - `.env` (root) = source of truth, ALL credentials (gitignored, NOT committed)
   - `backend/.env` + `frontend/.env.local` = auto-copy từ root `.env` bởi `.kilo/setup-script.ps1` khi tạo worktree
   - `backend/.env.example` = template placeholder (committed)
