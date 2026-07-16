@@ -217,3 +217,115 @@ def update_beat(
     if not result.data:
         return None
     return result.data[0]
+
+
+def list_scenes(novel_id: str, user_id: str) -> list[dict[str, Any]]:
+    """Liệt kê tất cả scenes của novel, verify ownership qua join novels.
+
+    Args:
+        novel_id: UUID của novel cần list scenes.
+        user_id: UUID của user (lọc để enforce ownership).
+
+    Returns:
+        List các dict scene record sắp xếp theo beat_id, scene_number,
+        [] nếu không tìm thấy hoặc không thuộc user.
+    """
+    client = _get_client()
+    result = (
+        client.table("scenes")
+        .select("*, novels!inner(user_id)")
+        .eq("novel_id", novel_id)
+        .eq("novels.user_id", user_id)
+        .order("beat_id")
+        .order("scene_number")
+        .execute()
+    )
+    return result.data
+
+
+def create_scene(
+    novel_id: str,
+    beat_id: str,
+    title: str,
+    summary: str | None,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """Tạo scene mới trong beat, auto-calc scene_number.
+
+    Verify ownership: novel phải thuộc user (qua get_novel). Auto-calc
+    scene_number = số scene hiện có trong beat + 1. Insert row với
+    status='empty'.
+
+    Args:
+        novel_id: UUID của novel chứa scene.
+        beat_id: UUID của beat chứa scene.
+        title: Tiêu đề scene (bắt buộc).
+        summary: Tóm tắt 1-2 câu (nullable).
+        user_id: UUID của user (enforce ownership).
+
+    Returns:
+        Dict scene record vừa tạo, hoặc None nếu novel không thuộc user.
+    """
+    if get_novel(novel_id, user_id) is None:
+        return None
+    client = _get_client()
+    existing = (
+        client.table("scenes")
+        .select("id")
+        .eq("novel_id", novel_id)
+        .eq("beat_id", beat_id)
+        .execute()
+    )
+    scene_number = len(existing.data) + 1
+    payload = {
+        "novel_id": novel_id,
+        "beat_id": beat_id,
+        "scene_number": scene_number,
+        "title": title,
+        "summary": summary,
+        "status": "empty",
+    }
+    result = client.table("scenes").insert(payload).execute()
+    return result.data[0]
+
+
+def update_scene(
+    scene_id: str,
+    title: str,
+    summary: str | None,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """Cập nhật title + summary cho một scene.
+
+    Verify ownership: scene phải thuộc user (qua join novels). Nếu không
+    thuộc user → return None (không update).
+
+    Args:
+        scene_id: UUID của scene cần update.
+        title: Tiêu đề scene mới.
+        summary: Tóm tắt mới (nullable).
+        user_id: UUID của user (enforce ownership).
+
+    Returns:
+        Dict scene record đã update, hoặc None nếu scene không tồn tại
+        hoặc không thuộc user.
+    """
+    client = _get_client()
+    check = (
+        client.table("scenes")
+        .select("*, novels!inner(user_id)")
+        .eq("id", scene_id)
+        .eq("novels.user_id", user_id)
+        .execute()
+    )
+    if not check.data:
+        return None
+    result = (
+        client.table("scenes")
+        .update({"title": title, "summary": summary})
+        .eq("id", scene_id)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0]
