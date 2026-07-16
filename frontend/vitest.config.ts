@@ -16,6 +16,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: false,
     setupFiles: ["./src/test/setup.ts"],
+    pool: "threads", // Windows: vitest 4 forks pool timeout — threads pool stable
   },
   resolve: {
     alias: {
