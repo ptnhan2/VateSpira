@@ -12,6 +12,12 @@ import {
   updateBeat,
   type Beat,
 } from "@/lib/beats";
+import {
+  createScene,
+  listScenes,
+  type Scene,
+} from "@/lib/scenes";
+import SceneCard from "./scene-card";
 
 /**
  * Beat đã merge cấu trúc StC (act + hint) với DB row (id + content).
@@ -59,23 +65,30 @@ export default function PlotPage() {
   const novelId = params.id;
 
   const [beats, setBeats] = useState<MergedBeat[]>([]);
+  const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!novelId) return;
     let cancelled = false;
-    listBeats(novelId)
-      .then((data) => {
-        if (!cancelled) setBeats(mergeBeats(data, novelId));
-      })
-      .catch((e) => {
-        if (!cancelled) {
+    Promise.allSettled([listBeats(novelId), listScenes(novelId)])
+      .then(([beatsResult, scenesResult]) => {
+        if (beatsResult.status === "fulfilled") {
+          setBeats(mergeBeats(beatsResult.value, novelId));
+        } else {
           setError(
-            e instanceof Error ? e.message : "Không thể tải beat sheet.",
+            beatsResult.reason instanceof Error
+              ? beatsResult.reason.message
+              : "Không thể tải beat sheet.",
           );
           // Vẫn render 15 slot rỗng để user có thể điền (resilient).
           setBeats(mergeBeats([], novelId));
+        }
+        // Scenes failure là non-fatal — scenes table có thể chưa tồn tại
+        // (UF-3a chưa merge). Trang vẫn dùng được, chevron hiện "0".
+        if (scenesResult.status === "fulfilled") {
+          setScenes(scenesResult.value);
         }
       })
       .finally(() => {
@@ -105,6 +118,22 @@ export default function PlotPage() {
           : b,
       ),
     );
+  }
+
+  /**
+   * Callback khi một scene lưu xong — cập nhật scene trong state.
+   * @param saved - Scene trả về từ Supabase.
+   */
+  function handleSceneSaved(saved: Scene) {
+    setScenes((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
+  }
+
+  /**
+   * Callback khi tạo scene mới — thêm vào state.
+   * @param scene - Scene vừa tạo.
+   */
+  function handleSceneAdded(scene: Scene) {
+    setScenes((prev) => [...prev, scene]);
   }
 
   return (
@@ -155,6 +184,13 @@ export default function PlotPage() {
                   novelId={novelId}
                   beat={beat}
                   onSaved={handleSaved}
+                  scenes={
+                    beat.id
+                      ? scenes.filter((s) => s.beat_id === beat.id)
+                      : []
+                  }
+                  onSceneSaved={handleSceneSaved}
+                  onSceneAdded={handleSceneAdded}
                 />
               ))}
           </section>
@@ -171,15 +207,22 @@ function BeatSlot({
   novelId,
   beat,
   onSaved,
+  scenes,
+  onSceneSaved,
+  onSceneAdded,
 }: {
   novelId: string;
   beat: MergedBeat;
   onSaved: (beatNumber: number, saved: Beat) => void;
+  scenes: Scene[];
+  onSceneSaved: (saved: Scene) => void;
+  onSceneAdded: (scene: Scene) => void;
 }) {
   const [content, setContent] = useState(beat.content ?? "");
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   /**
    * Lưu beat on blur: có id → update, thiếu id → create (resilient).
@@ -198,6 +241,33 @@ function BeatSlot({
       setSaveError(e instanceof Error ? e.message : "Không thể lưu beat.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  /**
+   * Tạo scene mới thuộc beat này. Scene number = max(existing) + 1.
+   * Yêu cầu beat đã có DB row (beat.id không null) — FK constraint.
+   */
+  async function handleAddScene() {
+    if (!beat.id) return;
+    const nextNumber =
+      scenes.length > 0
+        ? Math.max(...scenes.map((s) => s.scene_number)) + 1
+        : 1;
+    try {
+      const created = await createScene(
+        novelId,
+        beat.id,
+        nextNumber,
+        "",
+        "",
+      );
+      onSceneAdded(created);
+    } catch (e) {
+      // Surface error — không swallow (cùng pattern BeatSlot saveError).
+      setSaveError(
+        e instanceof Error ? e.message : "Không thể tạo scene.",
+      );
     }
   }
 
@@ -246,7 +316,48 @@ function BeatSlot({
             {saveError}
           </p>
         )}
+
+        {isExpanded && (
+          <div className="mt-3 ml-4 border-l-2 border-line pl-4">
+            {scenes.map((scene) => (
+              <SceneCard
+                key={scene.id}
+                scene={scene}
+                onSaved={onSceneSaved}
+              />
+            ))}
+            {beat.id ? (
+              <button
+                type="button"
+                onClick={handleAddScene}
+                className="mt-2 text-xs text-muted transition-colors hover:text-vermilion dark:hover:text-terracotta"
+              >
+                + Thêm scene
+              </button>
+            ) : (
+              <p className="mt-2 text-xs italic text-muted">
+                Viết nội dung beat trước khi thêm scene.
+              </p>
+            )}
+          </div>
+        )}
       </div>
+      <button
+        type="button"
+        data-testid={`expand-${beat.beat_number}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-label={isExpanded ? "Thu gọn scenes" : "Mở rộng scenes"}
+        aria-expanded={isExpanded}
+        className="flex items-center gap-1 self-start pt-1 text-muted transition-colors hover:text-ink"
+      >
+        <span
+          className="inline-block h-2 w-2 border-r-[1.5px] border-b-[1.5px] border-current transition-transform"
+          style={{
+            transform: isExpanded ? "rotate(45deg)" : "rotate(-45deg)",
+          }}
+        />
+        <span className="font-mono text-[10px]">{scenes.length}</span>
+      </button>
     </div>
   );
 }
