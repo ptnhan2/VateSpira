@@ -422,10 +422,104 @@ def update_beat(beat_number: int, content: str, runtime: ToolRuntime) -> str:
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
+@tool
+def list_scenes(runtime: ToolRuntime) -> str:
+    """Liệt kê tất cả scenes của novel hiện tại, sắp xếp theo beat và scene_number.
+
+    Trả về danh sách các scene (id, beat_id, scene_number, title, summary,
+    status). Novel_id được lấy từ runtime context.
+
+    Returns:
+        JSON string chứa list các scene record.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    result = codex_service.list_scenes(novel_id=novel_id, user_id=user_id)
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def create_scene(
+    beat_number: int,
+    title: str,
+    summary: str,
+    runtime: ToolRuntime,
+) -> str:
+    """Tạo scene mới trong một beat theo số thứ tự beat (1-15).
+
+    Scene đại diện cho một sự kiện cụ thể trong beat. scene_number tự động
+    tính (số scene hiện có trong beat + 1). status='empty' (chưa có prose —
+    UF-4 scope).
+
+    Args:
+        beat_number: Số thứ tự beat (1-15) chứa scene.
+        title: Tiêu đề scene.
+        summary: Tóm tắt 1-2 câu về scene.
+
+    Returns:
+        JSON string chứa scene record vừa tạo, hoặc error nếu beat không
+        tìm thấy hoặc novel không thuộc user.
+    """
+    user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
+    beats = codex_service.list_beats(novel_id=novel_id, user_id=user_id)
+    beat = next((b for b in beats if b["beat_number"] == beat_number), None)
+    if beat is None:
+        return json.dumps(
+            {"error": f"Beat {beat_number} không tìm thấy trong novel."},
+            ensure_ascii=False,
+        )
+    result = codex_service.create_scene(
+        novel_id=novel_id,
+        beat_id=beat["id"],
+        title=title,
+        summary=summary or None,
+        user_id=user_id,
+    )
+    if result is None:
+        return json.dumps(
+            {"error": "Không thể tạo scene — novel không thuộc user."},
+            ensure_ascii=False,
+        )
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
+@tool
+def update_scene(
+    scene_id: str,
+    title: str,
+    summary: str,
+    runtime: ToolRuntime,
+) -> str:
+    """Cập nhật title + summary cho một scene theo scene_id.
+
+    Args:
+        scene_id: UUID của scene cần update.
+        title: Tiêu đề scene mới.
+        summary: Tóm tắt mới.
+
+    Returns:
+        JSON string chứa scene record đã update, hoặc error nếu không tìm thấy.
+    """
+    user_id = _get_user_id(runtime)
+    result = codex_service.update_scene(
+        scene_id=scene_id,
+        title=title,
+        summary=summary or None,
+        user_id=user_id,
+    )
+    if result is None:
+        return json.dumps(
+            {"error": f"Scene {scene_id} không tìm thấy hoặc không thuộc user."},
+            ensure_ascii=False,
+        )
+    return json.dumps(result, ensure_ascii=False, default=str)
+
+
 agent = create_deep_agent(
     model="deepseek:deepseek-chat",  # MVP priority #1; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
-    tools=[create_novel, list_novels, get_novel, list_beats, update_beat],
+    tools=[create_novel, list_novels, get_novel, list_beats, update_beat, list_scenes, create_scene, update_scene],
     middleware=[BYOKMiddleware()],
     backend=backend,
     permissions=permissions,
