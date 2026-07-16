@@ -5,7 +5,11 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    // Fix: .kilo/package.json confuses Turbopack root detection → 404.
+    // Explicitly set root to frontend directory (process.cwd() = frontend/ when running pnpm dev/build).
+    root: process.cwd(),
+  },
 };
 
 export default nextConfig;

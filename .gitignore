@@ -26,3 +26,7 @@ frontend/pnpm-workspace.yaml
 
 # pnpm workspace (auto-created, causes CI error)
 frontend/pnpm-workspace.yaml
+
+# Kilo worktree artifacts (confuses pnpm + Turbopack root detection)
+.kilo/package.json
+.kilo/package-lock.json

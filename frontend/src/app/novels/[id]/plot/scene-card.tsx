@@ -47,7 +47,7 @@ export default function SceneCard({
   }
 
   const hasContent = title.trim() !== "" || summary.trim() !== "";
-  const status = deriveStatus(hasContent ? title || summary : null, isDirty);
+  const status = deriveStatus(hasContent ? title.trim() || summary : null, isDirty);
   const dotClass =
     status === "filled"
       ? "bg-sage"
