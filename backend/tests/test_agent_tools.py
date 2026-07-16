@@ -215,10 +215,14 @@ def test_get_novel_raises_without_user_id():
 
 # --- tools wiring ---
 
-def test_all_five_tools_are_base_tool_instances():
-    """5 tools (create_novel, list_novels, get_novel, list_beats, update_beat) là BaseTool."""
+def test_all_eight_tools_are_base_tool_instances():
+    """8 tools (create_novel, list_novels, get_novel, list_beats, update_beat,
+    list_scenes, create_scene, update_scene) là BaseTool."""
     assert isinstance(agent.create_novel, BaseTool)
     assert isinstance(agent.list_novels, BaseTool)
     assert isinstance(agent.get_novel, BaseTool)
     assert isinstance(agent.list_beats, BaseTool)
     assert isinstance(agent.update_beat, BaseTool)
+    assert isinstance(agent.list_scenes, BaseTool)
+    assert isinstance(agent.create_scene, BaseTool)
+    assert isinstance(agent.update_scene, BaseTool)
