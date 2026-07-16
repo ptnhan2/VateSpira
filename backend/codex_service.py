@@ -9,6 +9,7 @@ See: docs/ARCHITECTURE.md Section 3.1 (ERD — novels table),
 """
 
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 from supabase import Client, create_client
@@ -324,6 +325,121 @@ def update_scene(
         client.table("scenes")
         .update({"title": title, "summary": summary})
         .eq("id", scene_id)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0]
+
+
+def create_chapter(
+    novel_id: str,
+    chapter_number: int,
+    title: str,
+    content: str,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """Tạo hoặc cập nhật chapter metadata trong Supabase chapters table.
+
+    Upsert theo (novel_id, chapter_number): nếu chapter đã tồn tại với
+    số thứ tự này → update title + word_count + status='draft'; nếu chưa
+    → insert row mới. Word_count tự động tính từ content (len của split).
+    Verify ownership: novel phải thuộc user (qua get_novel).
+
+    Args:
+        novel_id: UUID của novel chứa chapter.
+        chapter_number: Số thứ tự chapter (1, 2, 3, ...).
+        title: Tiêu đề chapter.
+        content: Nội dung prose (chỉ dùng để calc word_count, không lưu
+            vào DB — prose lưu trong StoreBackend qua write_file).
+        user_id: UUID của user (enforce ownership).
+
+    Returns:
+        Dict chapter record vừa tạo/update, hoặc None nếu novel không
+        thuộc user.
+    """
+    if get_novel(novel_id, user_id) is None:
+        return None
+    client = _get_client()
+    word_count = len(content.split()) if content else 0
+    existing = (
+        client.table("chapters")
+        .select("id")
+        .eq("novel_id", novel_id)
+        .eq("number", chapter_number)
+        .execute()
+    )
+    if existing.data:
+        result = (
+            client.table("chapters")
+            .update(
+                {
+                    "title": title,
+                    "word_count": word_count,
+                    "status": "draft",
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            .eq("id", existing.data[0]["id"])
+            .execute()
+        )
+    else:
+        result = client.table("chapters").insert(
+            {
+                "novel_id": novel_id,
+                "number": chapter_number,
+                "title": title,
+                "status": "draft",
+                "word_count": word_count,
+            }
+        ).execute()
+    return result.data[0]
+
+
+def list_chapters(novel_id: str, user_id: str) -> list[dict[str, Any]]:
+    """Liệt kê tất cả chapters của novel, verify ownership qua join novels.
+
+    Args:
+        novel_id: UUID của novel cần list chapters.
+        user_id: UUID của user (lọc để enforce ownership).
+
+    Returns:
+        List các dict chapter record sắp xếp theo number, [] nếu không
+        tìm thấy hoặc không thuộc user.
+    """
+    client = _get_client()
+    result = (
+        client.table("chapters")
+        .select("*, novels!inner(user_id)")
+        .eq("novel_id", novel_id)
+        .eq("novels.user_id", user_id)
+        .order("number")
+        .execute()
+    )
+    return result.data
+
+
+def get_chapter(
+    novel_id: str, chapter_number: int, user_id: str
+) -> dict[str, Any] | None:
+    """Lấy một chapter theo số thứ tự, verify ownership qua join novels.
+
+    Args:
+        novel_id: UUID của novel chứa chapter.
+        chapter_number: Số thứ tự chapter cần lấy.
+        user_id: UUID của user (lọc để enforce ownership).
+
+    Returns:
+        Dict chapter record nếu tìm thấy, None nếu không tồn tại hoặc
+        không thuộc user.
+    """
+    client = _get_client()
+    result = (
+        client.table("chapters")
+        .select("*, novels!inner(user_id)")
+        .eq("novel_id", novel_id)
+        .eq("number", chapter_number)
+        .eq("novels.user_id", user_id)
         .execute()
     )
     if not result.data:
