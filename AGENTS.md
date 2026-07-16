@@ -15,7 +15,7 @@
 - **Test BE:** pytest
 - **Linter FE:** eslint
 - **Linter BE:** ruff
-- **Last verified:** 2026-07-16 bởi doc-sync (UF-2 merge)
+- **Last verified:** 2026-07-16 bởi doc-sync (UF-3 merge)
 - **Env files:**
   - LANGSMITH_API_URL (LangGraph dev server URL, dev: http://localhost:2024)
   - VATESPIRA_DEV_USER_ID / EMAIL / PASSWORD (dev user for E2E testing)
