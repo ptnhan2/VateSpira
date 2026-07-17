@@ -71,6 +71,72 @@ export async function GET(
 }
 
 /**
+ * Route handler PUT — cập nhật nội dung manuscript file trong StoreBackend.
+ *
+ * FE gửi PUT với body `{ path, content, userId? }`. Route dùng
+ * `client.store.putItem()` để ghi đè nội dung file.
+ *
+ * @param req - NextRequest chứa JSON body `{ path, content, userId? }`.
+ * @param params - Dynamic route params `{ id: string }` (novelId).
+ * @returns JSON `{ success: true }` hoặc error.
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  const { id: novelId } = await params;
+
+  let body: { path?: string; content?: string; userId?: string };
+  try {
+    body = (await req.json()) as { path?: string; content?: string; userId?: string };
+  } catch {
+    return NextResponse.json(
+      { error: "Body không hợp lệ." },
+      { status: 400 },
+    );
+  }
+
+  const filePath = body.path?.trim();
+  if (!filePath) {
+    return NextResponse.json(
+      { error: "Thiếu đường dẫn file." },
+      { status: 400 },
+    );
+  }
+
+  const userId =
+    body.userId || process.env.VATESPIRA_DEV_USER_ID;
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Đăng nhập để sửa manuscript." },
+      { status: 401 },
+    );
+  }
+
+  const apiUrl = process.env.LANGSMITH_API_URL;
+  const apiKey = process.env.LANGSMITH_API_KEY;
+  if (!apiUrl || !apiKey) {
+    return NextResponse.json(
+      { error: "Server chưa cấu hình LangGraph." },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const client = new Client({ apiUrl, apiKey });
+    const namespace = [userId, "novels", novelId];
+    await client.store.putItem(namespace, filePath, {
+      content: body.content ?? "",
+      encoding: "utf-8",
+    });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Lỗi không xác định.";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+}
+
+/**
  * Trích text content từ store item value.
  *
  * StoreBackend lưu file content dưới `value.content` (string hoặc legacy

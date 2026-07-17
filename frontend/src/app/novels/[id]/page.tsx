@@ -13,6 +13,7 @@ import {
 } from "@/lib/write";
 import type { Scene } from "@/lib/scenes";
 import type { Chapter } from "@/lib/chapters";
+import { updateChapterWordCount } from "@/lib/chapters";
 
 /** View state cho center panel — Plot (mặc định), Editor (khi đang viết), Reader (khi đọc chapter). */
 type CenterView = "plot" | "editor" | "reader";
@@ -43,6 +44,7 @@ export default function WritingWorkspace() {
   const [proposedProse, setProposedProse] = useState<string | null>(null);
   const [readingChapter, setReadingChapter] = useState<Chapter | null>(null);
   const [chapterProse, setChapterProse] = useState<string | null>(null);
+  const [chapterFilePath, setChapterFilePath] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +109,7 @@ export default function WritingWorkspace() {
   function handleReadChapter(chapter: Chapter) {
     setReadingChapter(chapter);
     setChapterProse(null);
+    setChapterFilePath(null);
     setView("reader");
     void fetch(`/api/novels/${novelId}/manuscript`)
       .then((res) => res.json())
@@ -118,6 +121,7 @@ export default function WritingWorkspace() {
             f.path.includes(`ch-${chapter.number}`) ||
             f.path.includes(`${chapter.number}.md`),
         );
+        setChapterFilePath(match?.path ?? null);
         setChapterProse(match?.content ?? null);
       })
       .catch(() => {
@@ -130,6 +134,24 @@ export default function WritingWorkspace() {
     setView("plot");
     setReadingChapter(null);
     setChapterProse(null);
+    setChapterFilePath(null);
+  }
+
+  /** Lưu prose đã sửa → PUT manuscript route + update word_count. */
+  async function handleSaveProse(newContent: string) {
+    if (!chapterFilePath || !readingChapter) return;
+    try {
+      await fetch(`/api/novels/${novelId}/manuscript`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: chapterFilePath, content: newContent }),
+      });
+      await updateChapterWordCount(readingChapter.id, newContent);
+      setChapterProse(newContent);
+      setReadingChapter({ ...readingChapter, word_count: newContent.trim() ? newContent.trim().split(/\s+/).length : 0 });
+    } catch {
+      // Non-fatal — prose saved to StoreBackend, word_count update failed
+    }
   }
 
   /** Gửi tin nhắn chat (khi không trong editing flow). */
@@ -222,7 +244,9 @@ export default function WritingWorkspace() {
         <ChapterReader
           chapter={readingChapter}
           prose={chapterProse}
+          canEdit={!!chapterFilePath}
           onClose={handleCloseReader}
+          onSave={handleSaveProse}
         />
       ) : (
         <PlotContent
@@ -453,25 +477,55 @@ function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
   );
 }
 
-// ===== Chapter Reader (center — đọc prose chương đã viết) =====
+// ===== Chapter Reader (center — đọc/sửa prose chương đã viết) =====
 
 interface ChapterReaderProps {
   chapter: Chapter | null;
   prose: string | null;
+  canEdit: boolean;
   onClose: () => void;
+  onSave: (newContent: string) => Promise<void>;
 }
 
 /**
- * Chapter reader — hiển thị prose của chương đã viết.
+ * Chapter reader — hiển thị + chỉnh sửa prose của chương đã viết.
  *
- * Fetch prose từ StoreBackend qua /api/novels/[id]/manuscript.
- * Hiển thị metadata (số, tiêu đề, status, word count) + prose (serif, max-w-prose).
+ * Read mode: hiển thị prose (serif, max-w-prose).
+ * Edit mode: textarea + nút Lưu/Hủy (khi canEdit=true và có file path).
  *
  * @param chapter - Chapter metadata từ DB.
- * @param prose - Nội dung prose (từ StoreBackend, null khi đang tải hoặc không tìm thấy).
+ * @param prose - Nội dung prose (từ StoreBackend).
+ * @param canEdit - Có thể sửa (true khi tìm thấy file path trong StoreBackend).
  * @param onClose - Callback đóng reader → về Plot view.
+ * @param onSave - Callback lưu prose đã sửa → PUT manuscript + update word_count.
  */
-function ChapterReader({ chapter, prose, onClose }: ChapterReaderProps) {
+function ChapterReader({ chapter, prose, canEdit, onClose, onSave }: ChapterReaderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  /** Bắt đầu sửa — copy prose sang editContent. */
+  function handleStartEdit() {
+    setEditContent(prose ?? "");
+    setSaveError(null);
+    setIsEditing(true);
+  }
+
+  /** Lưu prose đã sửa. */
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(editContent);
+      setIsEditing(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Không thể lưu.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <div className="rounded-lg border border-line bg-surface p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -483,13 +537,24 @@ function ChapterReader({ chapter, prose, onClose }: ChapterReaderProps) {
             {chapter?.title ?? "Chưa đặt tên"}
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs text-muted transition-colors hover:text-ink"
-        >
-          ✕ Đóng
-        </button>
+        <div className="flex gap-2">
+          {!isEditing && canEdit && prose !== null && (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              className="text-xs text-muted transition-colors hover:text-vermilion dark:hover:text-terracotta"
+            >
+              Sửa
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs text-muted transition-colors hover:text-ink"
+          >
+            ✕ Đóng
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 flex gap-3 text-xs text-muted">
@@ -503,10 +568,42 @@ function ChapterReader({ chapter, prose, onClose }: ChapterReaderProps) {
         <span className="font-mono">{chapter?.word_count ?? 0} từ</span>
       </div>
 
-      {prose === null ? (
+      {prose === null && !isEditing ? (
         <p className="py-8 text-center text-sm text-muted">
           Đang tải nội dung chương…
         </p>
+      ) : isEditing ? (
+        <div>
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={20}
+            className="w-full resize-y rounded-lg border border-line bg-paper px-3 py-2 font-serif text-[15px] leading-relaxed text-ink outline-none transition-colors focus:border-vermilion dark:focus:border-terracotta"
+          />
+          {saveError && (
+            <p className="mt-2 text-xs text-vermilion dark:text-terracotta">
+              {saveError}
+            </p>
+          )}
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="rounded-lg bg-sage px-4 py-2 text-sm font-medium text-cream transition-colors hover:opacity-90 disabled:opacity-50"
+            >
+              {isSaving ? "Đang lưu…" : "Lưu"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+              className="rounded-lg border border-line px-4 py-2 text-sm text-muted transition-colors hover:text-ink disabled:opacity-50"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="max-w-prose whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
           {prose}

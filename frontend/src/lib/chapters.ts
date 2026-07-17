@@ -50,3 +50,20 @@ export async function deleteChapter(chapterId: string): Promise<void> {
     .eq("id", chapterId);
   if (error) throw error;
 }
+
+/**
+ * Cập nhật word_count cho chapter (sau khi sửa prose thủ công).
+ * @param chapterId - UUID chapter.
+ * @param content - Nội dung prose mới (để tính word_count).
+ */
+export async function updateChapterWordCount(
+  chapterId: string,
+  content: string,
+): Promise<void> {
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const { error } = await supabase
+    .from("chapters")
+    .update({ word_count: wordCount })
+    .eq("id", chapterId);
+  if (error) throw error;
+}
