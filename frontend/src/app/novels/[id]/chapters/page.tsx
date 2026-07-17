@@ -32,6 +32,7 @@ export default function ChaptersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Chapter | null>(null);
   const [prose, setProse] = useState<string | null>(null);
+  const [proseLoaded, setProseLoaded] = useState(false);
   const [filePath, setFilePath] = useState<string | null>(null);
   const [manuscriptFiles, setManuscriptFiles] = useState<ManuscriptFile[]>([]);
 
@@ -65,6 +66,7 @@ export default function ChaptersPage() {
   function handleSelect(chapter: Chapter) {
     setSelected(chapter);
     setProse(null);
+    setProseLoaded(false);
     setFilePath(null);
     const match = manuscriptFiles.find(
       (f) =>
@@ -74,6 +76,7 @@ export default function ChaptersPage() {
     );
     setFilePath(match?.path ?? null);
     setProse(match?.content ?? null);
+    setProseLoaded(true);
   }
 
   /** Xoá chapter. */
@@ -179,6 +182,7 @@ export default function ChaptersPage() {
         <ChapterReaderEditor
           chapter={selected}
           prose={prose}
+          proseLoaded={proseLoaded}
           canEdit={!!filePath}
           onBack={() => setSelected(null)}
           onSave={handleSave}
@@ -192,12 +196,14 @@ export default function ChaptersPage() {
 function ChapterReaderEditor({
   chapter,
   prose,
+  proseLoaded,
   canEdit,
   onBack,
   onSave,
 }: {
   chapter: Chapter;
   prose: string | null;
+  proseLoaded: boolean;
   canEdit: boolean;
   onBack: () => void;
   onSave: (content: string) => Promise<void>;
@@ -263,9 +269,13 @@ function ChapterReaderEditor({
         <span className="font-mono">{chapter.word_count} từ</span>
       </div>
 
-      {prose === null && !isEditing ? (
+      {!proseLoaded ? (
         <p className="py-8 text-center text-sm text-muted">
           Đang tải nội dung chương…
+        </p>
+      ) : prose === null ? (
+        <p className="py-8 text-center text-sm text-muted">
+          Không tìm thấy nội dung chương. Server có thể đã restart (in-memory store).
         </p>
       ) : isEditing ? (
         <div>

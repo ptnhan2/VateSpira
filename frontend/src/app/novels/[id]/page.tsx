@@ -44,6 +44,7 @@ export default function WritingWorkspace() {
   const [proposedProse, setProposedProse] = useState<string | null>(null);
   const [readingChapter, setReadingChapter] = useState<Chapter | null>(null);
   const [chapterProse, setChapterProse] = useState<string | null>(null);
+  const [chapterProseLoaded, setChapterProseLoaded] = useState(false);
   const [chapterFilePath, setChapterFilePath] = useState<string | null>(null);
   const [plotRefreshKey, setPlotRefreshKey] = useState(0);
 
@@ -109,7 +110,20 @@ export default function WritingWorkspace() {
 
   /** Click "Sửa chương" trên scene → mở reader cho chapter đã có. */
   function handleEditChapter(scene: Scene) {
-    // Tìm chapter matching scene_number (best-effort match)
+    setReadingChapter({
+      id: scene.id,
+      novel_id: novelId,
+      number: scene.scene_number,
+      title: scene.title,
+      status: "draft",
+      word_count: 0,
+      created_at: "",
+      updated_at: "",
+    });
+    setChapterProse(null);
+    setChapterProseLoaded(false);
+    setChapterFilePath(null);
+    setView("reader");
     void fetch(`/api/novels/${novelId}/manuscript`)
       .then((res) => res.json())
       .then((data) => {
@@ -120,23 +134,13 @@ export default function WritingWorkspace() {
             f.path.includes(`ch-${scene.scene_number}`) ||
             f.path.includes(`${scene.scene_number}.md`),
         );
-        setReadingChapter({
-          id: scene.id,
-          novel_id: novelId,
-          number: scene.scene_number,
-          title: scene.title,
-          status: "draft",
-          word_count: 0,
-          created_at: "",
-          updated_at: "",
-        });
         setChapterFilePath(match?.path ?? null);
         setChapterProse(match?.content ?? null);
-        setView("reader");
+        setChapterProseLoaded(true);
       })
       .catch(() => {
-        setReadingChapter(null);
         setChapterProse(null);
+        setChapterProseLoaded(true);
       });
   }
 
@@ -265,6 +269,7 @@ export default function WritingWorkspace() {
         <ChapterReader
           chapter={readingChapter}
           prose={chapterProse}
+          proseLoaded={chapterProseLoaded}
           canEdit={!!chapterFilePath}
           onClose={handleCloseReader}
           onSave={handleSaveProse}
@@ -497,24 +502,13 @@ function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
 interface ChapterReaderProps {
   chapter: Chapter | null;
   prose: string | null;
+  proseLoaded: boolean;
   canEdit: boolean;
   onClose: () => void;
   onSave: (newContent: string) => Promise<void>;
 }
 
-/**
- * Chapter reader — hiển thị + chỉnh sửa prose của chương đã viết.
- *
- * Read mode: hiển thị prose (serif, max-w-prose).
- * Edit mode: textarea + nút Lưu/Hủy (khi canEdit=true và có file path).
- *
- * @param chapter - Chapter metadata từ DB.
- * @param prose - Nội dung prose (từ StoreBackend).
- * @param canEdit - Có thể sửa (true khi tìm thấy file path trong StoreBackend).
- * @param onClose - Callback đóng reader → về Plot view.
- * @param onSave - Callback lưu prose đã sửa → PUT manuscript + update word_count.
- */
-function ChapterReader({ chapter, prose, canEdit, onClose, onSave }: ChapterReaderProps) {
+function ChapterReader({ chapter, prose, proseLoaded, canEdit, onClose, onSave }: ChapterReaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -583,9 +577,13 @@ function ChapterReader({ chapter, prose, canEdit, onClose, onSave }: ChapterRead
         <span className="font-mono">{chapter?.word_count ?? 0} từ</span>
       </div>
 
-      {prose === null && !isEditing ? (
+      {!proseLoaded ? (
         <p className="py-8 text-center text-sm text-muted">
           Đang tải nội dung chương…
+        </p>
+      ) : prose === null ? (
+        <p className="py-8 text-center text-sm text-muted">
+          Không tìm thấy nội dung chương. Server có thể đã restart (in-memory store).
         </p>
       ) : isEditing ? (
         <div>
