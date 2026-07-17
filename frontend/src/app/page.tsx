@@ -165,7 +165,7 @@ function NovelCard({ novel }: { novel: Novel }) {
 
   return (
     <Link
-      href={`/novels/${novel.id}/plot`}
+      href={`/novels/${novel.id}`}
       className="flex flex-col justify-between rounded-lg border border-line bg-surface p-5 transition-colors hover:border-vermilion dark:hover:border-terracotta"
     >
       <div>

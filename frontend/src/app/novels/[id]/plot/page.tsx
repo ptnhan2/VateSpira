@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -137,24 +136,7 @@ export default function PlotPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href="/"
-        className="text-sm text-muted transition-colors hover:text-ink"
-      >
-        ← Quay lại
-      </Link>
-
-      <header className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
-          Cốt truyện
-        </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">
-          Beat Sheet
-        </h1>
-        <p className="mt-1 text-sm text-muted">Save the Cat · 15 nhịp</p>
-      </header>
-
+    <div className="max-w-3xl">
       {loading && (
         <p className="mt-8 text-sm text-muted">Đang tải beat sheet…</p>
       )}
