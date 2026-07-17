@@ -67,11 +67,13 @@ export default function PlotContent({
   novelId,
   onWriteChapter,
   onReadChapter,
+  onEditChapter,
   refreshKey = 0,
 }: {
   novelId: string;
   onWriteChapter: (scene: Scene) => void;
   onReadChapter: (chapter: Chapter) => void;
+  onEditChapter: (scene: Scene) => void;
   refreshKey?: number;
 }) {
   const [beats, setBeats] = useState<MergedBeat[]>([]);
@@ -177,61 +179,7 @@ export default function PlotContent({
         </div>
       )}
 
-      {/* Chapter list — chương đã viết (ở đầu trang, trước beat sheet) */}
-      {!loading && (
-        <section className="mt-4">
-          <div className="flex items-baseline justify-between border-b border-line pb-2">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
-              Chương đã viết
-            </h2>
-            <span className="font-mono text-[11px] text-muted">
-              {chapters.length} chương
-            </span>
-          </div>
-          {chapters.length === 0 ? (
-            <p className="py-4 text-sm text-muted">
-              Chưa có chương. Viết outline cho scene rồi click &ldquo;Viết chương&rdquo;.
-            </p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {chapters.map((chapter) => (
-                <li key={chapter.id} className="flex items-center gap-3 py-3">
-                  <span className="font-mono text-sm text-vermilion dark:text-terracotta">
-                    {String(chapter.number).padStart(2, "0")}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onReadChapter(chapter)}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <span className="block truncate font-serif text-[15px] text-ink hover:text-vermilion dark:hover:text-terracotta">
-                      {chapter.title ?? "Chưa đặt tên"}
-                    </span>
-                  </button>
-                  <span
-                    className={`h-2 w-2 flex-none rounded-full ${chapter.status === "final" ? "bg-sage" : chapter.status === "revised" ? "bg-vermilion dark:bg-terracotta" : "border border-muted"}`}
-                    aria-label={chapter.status}
-                  />
-                  <span className="font-mono text-xs text-muted">
-                    {chapter.word_count}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(`Xoá chương ${chapter.number}?`)) {
-                        void handleDeleteChapter(chapter.id);
-                      }
-                    }}
-                    className="text-xs text-muted transition-colors hover:text-vermilion dark:hover:text-terracotta"
-                  >
-                    Xoá
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      {/* Chapter list đã chuyển sang tab Chapters */}
 
       {!loading &&
         ([1, 2, 3] as const).map((act) => (
@@ -257,9 +205,11 @@ export default function PlotContent({
                       ? scenes.filter((s) => s.beat_id === beat.id)
                       : []
                   }
+                  chapterNumbers={new Set(chapters.map((c) => c.number))}
                   onSceneSaved={handleSceneSaved}
                   onSceneAdded={handleSceneAdded}
                   onWriteChapter={onWriteChapter}
+                  onEditChapter={onEditChapter}
                   onDeleteScene={handleDeleteScene}
                 />
               ))}
@@ -278,18 +228,22 @@ function BeatSlot({
   beat,
   onSaved,
   scenes,
+  chapterNumbers,
   onSceneSaved,
   onSceneAdded,
   onWriteChapter,
+  onEditChapter,
   onDeleteScene,
 }: {
   novelId: string;
   beat: MergedBeat;
   onSaved: (beatNumber: number, saved: Beat) => void;
   scenes: Scene[];
+  chapterNumbers: Set<number>;
   onSceneSaved: (saved: Scene) => void;
   onSceneAdded: (scene: Scene) => void;
   onWriteChapter: (scene: Scene) => void;
+  onEditChapter: (scene: Scene) => void;
   onDeleteScene: (sceneId: string) => void;
 }) {
   const [content, setContent] = useState(beat.content ?? "");
@@ -389,8 +343,10 @@ function BeatSlot({
                 <SceneCard
                   key={scene.id}
                   scene={scene}
+                  hasChapter={chapterNumbers.has(scene.scene_number)}
                   onSaved={onSceneSaved}
                   onWriteChapter={onWriteChapter}
+                  onEditChapter={onEditChapter}
                   onDelete={onDeleteScene}
                 />
             ))}

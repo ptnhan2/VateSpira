@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 
-/** Định nghĩa 3 tab — Plot là entry point (default). Writing tab đã bỏ (UF-4b redesign). */
+/** Định nghĩa 4 tab — Plot là entry point. Chapters tab riêng (tách khỏi Plot). */
 const TABS = [
   { label: "Plot", suffix: "" },
+  { label: "Chapters", suffix: "/chapters" },
   { label: "Codex", suffix: "/codex" },
   { label: "Review", suffix: "/review" },
 ] as const;

@@ -17,13 +17,17 @@ import { updateScene, type Scene } from "@/lib/scenes";
  */
 export default function SceneCard({
   scene,
+  hasChapter,
   onSaved,
   onWriteChapter,
+  onEditChapter,
   onDelete,
 }: {
   scene: Scene;
+  hasChapter: boolean;
   onSaved: (saved: Scene) => void;
   onWriteChapter: (scene: Scene) => void;
+  onEditChapter: (scene: Scene) => void;
   onDelete: (sceneId: string) => void;
 }) {
   const [title, setTitle] = useState(scene.title);
@@ -129,8 +133,8 @@ export default function SceneCard({
         />
       )}
 
-      {/* Viết chương button — chỉ hiện khi có outline */}
-      {hasOutline && (
+      {/* Viết chương HOẶC Sửa chương — chỉ hiện khi có outline */}
+      {hasOutline && !hasChapter && (
         <button
           type="button"
           data-testid={`write-chapter-${scene.id}`}
@@ -138,6 +142,16 @@ export default function SceneCard({
           className="mt-2 rounded-lg bg-vermilion px-3 py-1.5 text-xs font-medium text-cream transition-colors hover:opacity-90 dark:bg-terracotta"
         >
           Viết chương
+        </button>
+      )}
+      {hasOutline && hasChapter && (
+        <button
+          type="button"
+          data-testid={`edit-chapter-${scene.id}`}
+          onClick={() => onEditChapter({ ...scene, title, summary, outline })}
+          className="mt-2 rounded-lg border border-line px-3 py-1.5 text-xs text-muted transition-colors hover:text-ink"
+        >
+          Sửa chương
         </button>
       )}
 

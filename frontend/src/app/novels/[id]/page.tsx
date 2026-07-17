@@ -131,6 +131,39 @@ export default function WritingWorkspace() {
       });
   }
 
+  /** Click "Sửa chương" trên scene → mở reader cho chapter đã có. */
+  function handleEditChapter(scene: Scene) {
+    // Tìm chapter matching scene_number (best-effort match)
+    void fetch(`/api/novels/${novelId}/manuscript`)
+      .then((res) => res.json())
+      .then((data) => {
+        const files = (data.files as Array<{ path: string; content: string }>) ?? [];
+        const match = files.find(
+          (f) =>
+            f.path.includes(`chapter_${scene.scene_number}`) ||
+            f.path.includes(`ch-${scene.scene_number}`) ||
+            f.path.includes(`${scene.scene_number}.md`),
+        );
+        setReadingChapter({
+          id: scene.id,
+          novel_id: novelId,
+          number: scene.scene_number,
+          title: scene.title,
+          status: "draft",
+          word_count: 0,
+          created_at: "",
+          updated_at: "",
+        });
+        setChapterFilePath(match?.path ?? null);
+        setChapterProse(match?.content ?? null);
+        setView("reader");
+      })
+      .catch(() => {
+        setReadingChapter(null);
+        setChapterProse(null);
+      });
+  }
+
   /** Đóng reader → về Plot view. */
   function handleCloseReader() {
     setView("plot");
@@ -241,6 +274,7 @@ export default function WritingWorkspace() {
           novelId={novelId}
           onWriteChapter={handleWriteChapter}
           onReadChapter={handleReadChapter}
+          onEditChapter={handleEditChapter}
           refreshKey={plotRefreshKey}
         />
       </div>

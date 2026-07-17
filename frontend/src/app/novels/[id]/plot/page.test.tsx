@@ -114,7 +114,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
 
   it("render beat sheet content (không còn header/back link — layout cung cấp nav)", async () => {
     listBeatsMock.mockResolvedValue([]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByText("Opening Image")).toBeInTheDocument(),
     );
@@ -129,7 +129,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
 
   it("render đủ 15 textarea beat", async () => {
     listBeatsMock.mockResolvedValue([]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() => expect(listBeatsMock).toHaveBeenCalledTimes(1));
     expect(screen.getAllByRole("textbox")).toHaveLength(15);
     expect(screen.getByText("Opening Image")).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
 
   it("render 3 nhãn hồi (Hồi 1/2/3)", async () => {
     listBeatsMock.mockResolvedValue([]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() => expect(listBeatsMock).toHaveBeenCalled());
     expect(screen.getByText(/Hồi 1 · Khởi/)).toBeInTheDocument();
     expect(screen.getByText(/Hồi 2 · Đối đầu/)).toBeInTheDocument();
@@ -147,13 +147,13 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
 
   it("hiển thị loading khi đang tải", () => {
     listBeatsMock.mockReturnValue(new Promise(() => {}));
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     expect(screen.getByText(/Đang tải/)).toBeInTheDocument();
   });
 
   it("fetch lỗi → hiện notice + vẫn render 15 slot rỗng", async () => {
     listBeatsMock.mockRejectedValue(new Error("Lỗi mạng"));
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/Lỗi mạng/)).toBeInTheDocument());
     expect(screen.getAllByRole("textbox")).toHaveLength(15);
   });
@@ -163,7 +163,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
       filledBeat(1, "Opening Image", "Elena đứng trước tháp."),
       filledBeat(9, "Midpoint", "Elena gặp Oracle."),
     ]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Opening Image")).toHaveValue(
         "Elena đứng trước tháp.",
@@ -182,7 +182,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
     updateBeatMock.mockResolvedValue(
       filledBeat(1, "Opening Image", "nội dung mới"),
     );
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     const ta = await screen.findByLabelText("Nội dung Opening Image");
     fireEvent.change(ta, { target: { value: "nội dung mới" } });
     fireEvent.blur(ta);
@@ -195,7 +195,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
   it("edit + blur slot KHÔNG có id → gọi createBeat", async () => {
     listBeatsMock.mockResolvedValue([]);
     createBeatMock.mockResolvedValue(filledBeat(2, "Theme Stated", "chủ đề tin"));
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     const ta = await screen.findByLabelText("Nội dung Theme Stated");
     fireEvent.change(ta, { target: { value: "chủ đề tin" } });
     fireEvent.blur(ta);
@@ -214,7 +214,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
     listBeatsMock.mockResolvedValue([
       filledBeat(1, "Opening Image", "đã điền"),
     ]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
     );
@@ -238,7 +238,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
       makeScene("s1", "b1", 1, "Sương mù", "Elena đi bộ"),
       makeScene("s2", "b1", 2, "Bức thư", "Mực nhòe"),
     ]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
     );
@@ -257,7 +257,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
       makeScene("s1", "b1", 1, "Scene 1", ""),
       makeScene("s2", "b1", 2, "Scene 2", ""),
     ]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() => expect(listBeatsMock).toHaveBeenCalled());
     expect(screen.getByTestId("expand-1")).toHaveTextContent("2");
     expect(screen.getByTestId("expand-2")).toHaveTextContent("0");
@@ -269,7 +269,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
     ]);
     listScenesMock.mockResolvedValue([]);
     createSceneMock.mockResolvedValue(makeScene("s1", "b1", 1, "", ""));
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
     );
@@ -299,7 +299,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
     updateSceneMock.mockResolvedValue(
       makeScene("s1", "b1", 1, "mới", "tóm tắt cũ"),
     );
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Opening Image")).toBeInTheDocument(),
     );
@@ -317,7 +317,7 @@ describe("PlotContent (beat sheet Save the Cat)", () => {
   it("beat KHÔNG có id → expand không có nút Add scene", async () => {
     listBeatsMock.mockResolvedValue([]);
     listScenesMock.mockResolvedValue([]);
-    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} />);
+    render(<PlotContent novelId="novel-test" onWriteChapter={vi.fn()} onReadChapter={vi.fn()} onEditChapter={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByLabelText("Nội dung Theme Stated")).toBeInTheDocument(),
     );

@@ -12,11 +12,13 @@ vi.mock("./plot-content", () => ({
     novelId,
     onWriteChapter,
     onReadChapter,
+    onEditChapter,
     refreshKey,
   }: {
     novelId: string;
     onWriteChapter: (scene: unknown) => void;
     onReadChapter: (chapter: unknown) => void;
+    onEditChapter: (scene: unknown) => void;
     refreshKey?: number;
   }) =>
     createElement(
