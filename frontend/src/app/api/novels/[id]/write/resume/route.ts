@@ -85,6 +85,7 @@ export async function POST(
         resume: { decisions: [{ type: decision }] },
       },
       input: null,
+      context: { user_id: userId, novel_id: novelId },
       streamMode: "values" as const,
     },
     { novelId, userId },

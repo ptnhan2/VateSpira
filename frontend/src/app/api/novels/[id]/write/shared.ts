@@ -163,6 +163,8 @@ async function runAgentStream(
   }
 
   // Stream kết thúc. Kiểm tra: interrupt hay completion?
+  // Delay nhỏ để đảm bảo interrupt đã được register trong thread state (race condition fix).
+  await new Promise((resolve) => setTimeout(resolve, 500));
   const state = await client.threads.getState(threadId);
   const nextNodes = (state as { next?: string[] }).next ?? [];
 
