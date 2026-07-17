@@ -32,12 +32,13 @@ FE (UF-4b) → /api/novels/[id]/write → LangGraph SDK
   │                              Agent (with rubric in state)
   │                                          │
   │                              ┌───────────┼───────────┐
-  │                              ▼           ▼           ▼
-  │                          read context  write_chapter  RubricMiddleware
-  │                          (get_novel,   (@tool: file   (grader sub-agent
-  │                           list_beats,   + DB metadata, evaluates against
-  │                           list_scenes,  HITL interrupt) rubric, max 3 iter)
-  │                           read_file)
+  │                              ▼           ▼             ▼
+  │                          read context  write_file     RubricMiddleware
+  │                          (get_novel,   (built-in:     (grader sub-agent
+  │                           list_beats,  prose, HITL)   evaluates against
+  │                           list_scenes, + save_chapter  rubric, max 3 iter)
+  │                           read_file)   _metadata @tool
+  │                                        (DB only)
   │                                          │
   │                              ┌───────────┘
   │                              ▼
@@ -58,6 +59,8 @@ chapters (id, novel_id, number, title, status, word_count, created_at, updated_a
 ```
 
 **State transitions:** `draft → in_review → revised → final`
+
+> ⚠️ **Implementation status (UF-4a):** Only `draft` is implemented. Transitions to `in_review`/`revised`/`final` require wiring `on_evaluation` callback or FE-driven update — tracked as follow-up issue. See Issue #28.
 
 - `draft`: agent vừa viết xong (write_chapter insert với status='draft')
 - `in_review`: RubricMiddleware đang đánh giá
@@ -92,13 +95,22 @@ AC-7: THE SYSTEM SHALL provide @tool list_chapters for listing all chapters of a
 
 ## 7. API Contracts
 
-### @tool write_chapter
+### Agent writes prose via built-in write_file (HITL applies)
 ```python
-write_chapter(chapter_number: int, title: str, content: str, runtime: ToolRuntime) -> str
+# Agent uses built-in write_file tool — FilesystemPermission(mode="interrupt") intercepts
+write_file("/manuscript/chapters/{novel_id}_{chapter_number}.md", content)
+# → HITL pause → user approves → file written to StoreBackend
 ```
-- Writes prose to `/manuscript/chapters/{novel_id}_{chapter_number}.md` (StoreBackend, HITL interrupt)
+
+### @tool save_chapter_metadata (DB only — called after write_file)
+```python
+save_chapter_metadata(chapter_number: int, title: str, content: str, runtime: ToolRuntime) -> str
+```
 - Inserts/updates `chapters` table (novel_id, number, title, status='draft', word_count=len(content.split()))
-- Returns JSON: `{"id": "...", "chapter_number": ..., "title": ..., "word_count": ..., "status": "draft"}`
+- Does NOT write file — prose already written via built-in write_file (HITL)
+- Returns JSON: `{"id": "...", "number": ..., "title": ..., "word_count": ..., "status": "draft"}`
+
+> ⚠️ **Why split?** FilesystemPermission(mode="interrupt") only intercepts BUILT-IN tool calls (write_file/edit_file). Direct `backend.write()` from inside a @tool bypasses permission middleware. Single @tool calling backend.write() = HITL silently skipped. Split ensures HITL works.
 
 ### @tool list_chapters
 ```python
@@ -143,12 +155,12 @@ Chat-centric layout (Direction A):
 
 | Sub-task | Module | Agent | Scope | Dependency |
 |----------|--------|-------|-------|------------|
-| UF-4a | backend/ | worker | RubricMiddleware + @tool write_chapter + @tool list_chapters + chapter rubric constant + codex_service chapter CRUD | None (existing tables + agent.py) |
+| UF-4a | backend/ | worker | RubricMiddleware + @tool save_chapter_metadata + @tool list_chapters + chapter rubric constant + codex_service chapter CRUD | None (existing tables + agent.py) |
 | UF-4b | frontend/ | fe-dev | Chat UI + HITL approval + chapter display + /api/novels/[id]/write route | UF-4a merged |
 
 ## Assumptions
 
 - [ASSUMPTION] Chapter rubric hardcoded (not configurable per novel). P2: configurable.
 - [ASSUMPTION] Agent reads context via existing @tools (get_novel, list_beats, list_scenes) + built-in read_file (/memories/novel-bible.md). No new read @tools needed for MVP.
-- [ASSUMPTION] HITL interrupt works with write_file called inside @tool (deepagents handles this — FilesystemPermission applies to all write operations on /manuscript/**).
+- [ASSUMPTION] HITL interrupt works via built-in write_file (FilesystemPermission only intercepts built-in tool calls, NOT backend.write() from @tool — verified in deepagents source). Split: write_file (prose, HITL) + save_chapter_metadata (DB).
 - [ASSUMPTION] FE chat UI uses @langchain/langgraph-sdk streaming with interrupt handling (extends existing /api/novels/create pattern).
