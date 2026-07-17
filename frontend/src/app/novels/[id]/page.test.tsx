@@ -12,10 +12,12 @@ vi.mock("./plot-content", () => ({
     novelId,
     onWriteChapter,
     onReadChapter,
+    refreshKey,
   }: {
     novelId: string;
     onWriteChapter: (scene: unknown) => void;
     onReadChapter: (chapter: unknown) => void;
+    refreshKey?: number;
   }) =>
     createElement(
       "div",

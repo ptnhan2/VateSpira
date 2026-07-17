@@ -67,10 +67,12 @@ export default function PlotContent({
   novelId,
   onWriteChapter,
   onReadChapter,
+  refreshKey = 0,
 }: {
   novelId: string;
   onWriteChapter: (scene: Scene) => void;
   onReadChapter: (chapter: Chapter) => void;
+  refreshKey?: number;
 }) {
   const [beats, setBeats] = useState<MergedBeat[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -106,7 +108,7 @@ export default function PlotContent({
     return () => {
       cancelled = true;
     };
-  }, [novelId]);
+  }, [novelId, refreshKey]);
 
   /**
    * Callback khi một beat lưu xong — cập nhật id/content vào state.

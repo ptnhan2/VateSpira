@@ -45,6 +45,7 @@ export default function WritingWorkspace() {
   const [readingChapter, setReadingChapter] = useState<Chapter | null>(null);
   const [chapterProse, setChapterProse] = useState<string | null>(null);
   const [chapterFilePath, setChapterFilePath] = useState<string | null>(null);
+  const [plotRefreshKey, setPlotRefreshKey] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +90,7 @@ export default function WritingWorkspace() {
         setIsStreaming(false);
         setInterrupt(null);
         setProposedProse(null);
+        setPlotRefreshKey((k) => k + 1);
         if (result.chapterId) setView("plot");
       },
       onError: (err) => {
@@ -194,6 +196,7 @@ export default function WritingWorkspace() {
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
+        setPlotRefreshKey((k) => k + 1);
         setView("plot");
       },
       onError: (err) => {
@@ -232,27 +235,30 @@ export default function WritingWorkspace() {
 
   return (
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_320px] md:gap-6">
-      {/* Center panel: Plot (default), Editor (khi đang viết), hoặc Reader (khi đọc chapter) */}
-      {view === "editor" ? (
+      {/* Center panel: Plot (always mounted, hidden when not active), Editor, Reader */}
+      <div className={view === "plot" ? "" : "hidden"}>
+        <PlotContent
+          novelId={novelId}
+          onWriteChapter={handleWriteChapter}
+          onReadChapter={handleReadChapter}
+          refreshKey={plotRefreshKey}
+        />
+      </div>
+      {view === "editor" && (
         <EditorPanel
           scene={activeScene}
           proposedProse={proposedProse}
           isStreaming={isStreaming}
           onClose={handleCloseEditor}
         />
-      ) : view === "reader" ? (
+      )}
+      {view === "reader" && (
         <ChapterReader
           chapter={readingChapter}
           prose={chapterProse}
           canEdit={!!chapterFilePath}
           onClose={handleCloseReader}
           onSave={handleSaveProse}
-        />
-      ) : (
-        <PlotContent
-          novelId={novelId}
-          onWriteChapter={handleWriteChapter}
-          onReadChapter={handleReadChapter}
         />
       )}
 
