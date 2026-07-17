@@ -12,9 +12,10 @@ import {
   type WriteComplete,
 } from "@/lib/write";
 import type { Scene } from "@/lib/scenes";
+import type { Chapter } from "@/lib/chapters";
 
-/** View state cho center panel — Plot (mặc định) hoặc Editor (khi đang viết). */
-type CenterView = "plot" | "editor";
+/** View state cho center panel — Plot (mặc định), Editor (khi đang viết), Reader (khi đọc chapter). */
+type CenterView = "plot" | "editor" | "reader";
 
 /**
  * Writing workspace — 2-panel layout: Plot (center) + Chat (right, 320px persistent).
@@ -40,6 +41,8 @@ export default function WritingWorkspace() {
   const [view, setView] = useState<CenterView>("plot");
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [proposedProse, setProposedProse] = useState<string | null>(null);
+  const [readingChapter, setReadingChapter] = useState<Chapter | null>(null);
+  const [chapterProse, setChapterProse] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +101,35 @@ export default function WritingWorkspace() {
     setView("plot");
     setProposedProse(null);
     setActiveScene(null);
+  }
+
+  /** Click chapter trong list → đọc prose. */
+  function handleReadChapter(chapter: Chapter) {
+    setReadingChapter(chapter);
+    setChapterProse(null);
+    setView("reader");
+    void fetch(`/api/novels/${novelId}/manuscript`)
+      .then((res) => res.json())
+      .then((data) => {
+        const files = (data.files as Array<{ path: string; content: string }>) ?? [];
+        const match = files.find(
+          (f) =>
+            f.path.includes(`chapter_${chapter.number}`) ||
+            f.path.includes(`ch-${chapter.number}`) ||
+            f.path.includes(`${chapter.number}.md`),
+        );
+        setChapterProse(match?.content ?? null);
+      })
+      .catch(() => {
+        setChapterProse(null);
+      });
+  }
+
+  /** Đóng reader → về Plot view. */
+  function handleCloseReader() {
+    setView("plot");
+    setReadingChapter(null);
+    setChapterProse(null);
   }
 
   /** Gửi tin nhắn chat (khi không trong editing flow). */
@@ -178,7 +210,7 @@ export default function WritingWorkspace() {
 
   return (
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_320px] md:gap-6">
-      {/* Center panel: Plot (default) hoặc Editor (khi đang viết) */}
+      {/* Center panel: Plot (default), Editor (khi đang viết), hoặc Reader (khi đọc chapter) */}
       {view === "editor" ? (
         <EditorPanel
           scene={activeScene}
@@ -186,8 +218,18 @@ export default function WritingWorkspace() {
           isStreaming={isStreaming}
           onClose={handleCloseEditor}
         />
+      ) : view === "reader" ? (
+        <ChapterReader
+          chapter={readingChapter}
+          prose={chapterProse}
+          onClose={handleCloseReader}
+        />
       ) : (
-        <PlotContent novelId={novelId} onWriteChapter={handleWriteChapter} />
+        <PlotContent
+          novelId={novelId}
+          onWriteChapter={handleWriteChapter}
+          onReadChapter={handleReadChapter}
+        />
       )}
 
       {/* Chat panel (right, 320px persistent) */}
@@ -407,6 +449,69 @@ function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-vermilion align-middle dark:bg-terracotta" />
         )}
       </div>
+    </div>
+  );
+}
+
+// ===== Chapter Reader (center — đọc prose chương đã viết) =====
+
+interface ChapterReaderProps {
+  chapter: Chapter | null;
+  prose: string | null;
+  onClose: () => void;
+}
+
+/**
+ * Chapter reader — hiển thị prose của chương đã viết.
+ *
+ * Fetch prose từ StoreBackend qua /api/novels/[id]/manuscript.
+ * Hiển thị metadata (số, tiêu đề, status, word count) + prose (serif, max-w-prose).
+ *
+ * @param chapter - Chapter metadata từ DB.
+ * @param prose - Nội dung prose (từ StoreBackend, null khi đang tải hoặc không tìm thấy).
+ * @param onClose - Callback đóng reader → về Plot view.
+ */
+function ChapterReader({ chapter, prose, onClose }: ChapterReaderProps) {
+  return (
+    <div className="rounded-lg border border-line bg-surface p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="font-mono text-xs text-muted">
+            Chương {chapter?.number ?? "?"}
+          </p>
+          <h2 className="mt-0.5 font-serif text-xl font-semibold text-ink">
+            {chapter?.title ?? "Chưa đặt tên"}
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-muted transition-colors hover:text-ink"
+        >
+          ✕ Đóng
+        </button>
+      </div>
+
+      <div className="mb-4 flex gap-3 text-xs text-muted">
+        <span className="rounded-full border border-line px-2 py-0.5">
+          {chapter?.status === "final"
+            ? "Hoàn thành"
+            : chapter?.status === "revised"
+              ? "Đã sửa"
+              : "Bản nháp"}
+        </span>
+        <span className="font-mono">{chapter?.word_count ?? 0} từ</span>
+      </div>
+
+      {prose === null ? (
+        <p className="py-8 text-center text-sm text-muted">
+          Đang tải nội dung chương…
+        </p>
+      ) : (
+        <div className="max-w-prose whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
+          {prose}
+        </div>
+      )}
     </div>
   );
 }

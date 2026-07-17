@@ -19,10 +19,12 @@ export default function SceneCard({
   scene,
   onSaved,
   onWriteChapter,
+  onDelete,
 }: {
   scene: Scene;
   onSaved: (saved: Scene) => void;
   onWriteChapter: (scene: Scene) => void;
+  onDelete: (sceneId: string) => void;
 }) {
   const [title, setTitle] = useState(scene.title);
   const [summary, setSummary] = useState(scene.summary);
@@ -138,6 +140,20 @@ export default function SceneCard({
           Viết chương
         </button>
       )}
+
+      {/* Xoá scene */}
+      <button
+        type="button"
+        data-testid={`delete-scene-${scene.id}`}
+        onClick={() => {
+          if (window.confirm(`Xoá scene "${title || scene.scene_number}"?`)) {
+            onDelete(scene.id);
+          }
+        }}
+        className="mt-2 ml-2 text-xs text-muted transition-colors hover:text-vermilion dark:hover:text-terracotta"
+      >
+        Xoá
+      </button>
 
       {isSaving && <p className="mt-1 text-xs text-muted">đang lưu…</p>}
       {saveError && (

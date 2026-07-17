@@ -85,3 +85,66 @@ function extractStoreContent(value: Record<string, unknown>): string {
   if (Array.isArray(raw)) return raw.join("\n");
   return "";
 }
+
+/**
+ * Route handler DELETE — xoá manuscript file khỏi StoreBackend.
+ *
+ * FE gửi DELETE với body `{ path, userId? }`. Route dùng
+ * `client.store.deleteItem()` để xoá file khỏi namespace.
+ *
+ * @param req - NextRequest chứa JSON body `{ path, userId? }`.
+ * @param params - Dynamic route params `{ id: string }` (novelId).
+ * @returns JSON `{ success: true }` hoặc error.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  const { id: novelId } = await params;
+
+  let body: { path?: string; userId?: string };
+  try {
+    body = (await req.json()) as { path?: string; userId?: string };
+  } catch {
+    return NextResponse.json(
+      { error: "Body không hợp lệ." },
+      { status: 400 },
+    );
+  }
+
+  const filePath = body.path?.trim();
+  if (!filePath) {
+    return NextResponse.json(
+      { error: "Thiếu đường dẫn file." },
+      { status: 400 },
+    );
+  }
+
+  const userId =
+    body.userId || process.env.VATESPIRA_DEV_USER_ID;
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Đăng nhập để xoá manuscript." },
+      { status: 401 },
+    );
+  }
+
+  const apiUrl = process.env.LANGSMITH_API_URL;
+  const apiKey = process.env.LANGSMITH_API_KEY;
+  if (!apiUrl || !apiKey) {
+    return NextResponse.json(
+      { error: "Server chưa cấu hình LangGraph." },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const client = new Client({ apiUrl, apiKey });
+    const namespace = [userId, "novels", novelId];
+    await client.store.deleteItem(namespace, filePath);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Lỗi không xác định.";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+}

@@ -38,3 +38,15 @@ export async function listChapters(novelId: string): Promise<Chapter[]> {
   if (error) throw error;
   return (data ?? []) as Chapter[];
 }
+
+/**
+ * Xoá một chapter theo id.
+ * @param chapterId - UUID chapter cần xoá.
+ */
+export async function deleteChapter(chapterId: string): Promise<void> {
+  const { error } = await supabase
+    .from("chapters")
+    .delete()
+    .eq("id", chapterId);
+  if (error) throw error;
+}

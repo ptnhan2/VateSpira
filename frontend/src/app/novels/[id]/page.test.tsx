@@ -11,9 +11,11 @@ vi.mock("./plot-content", () => ({
   default: ({
     novelId,
     onWriteChapter,
+    onReadChapter,
   }: {
     novelId: string;
     onWriteChapter: (scene: unknown) => void;
+    onReadChapter: (chapter: unknown) => void;
   }) =>
     createElement(
       "div",
@@ -33,6 +35,21 @@ vi.mock("./plot-content", () => ({
             }),
         },
         "Viết chương",
+      ),
+      createElement(
+        "button",
+        {
+          "data-testid": "read-chapter-btn",
+          onClick: () =>
+            onReadChapter({
+              id: "c1",
+              number: 1,
+              title: "Test Chapter",
+              status: "draft",
+              word_count: 100,
+            }),
+        },
+        "Đọc chương",
       ),
     ),
 }));

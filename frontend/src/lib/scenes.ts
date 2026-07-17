@@ -68,6 +68,18 @@ export async function createScene(
 }
 
 /**
+ * Xoá một scene theo id.
+ * @param sceneId - UUID scene cần xoá.
+ */
+export async function deleteScene(sceneId: string): Promise<void> {
+  const { error } = await supabase
+    .from("scenes")
+    .delete()
+    .eq("id", sceneId);
+  if (error) throw error;
+}
+
+/**
  * Cập nhật title + summary + outline của scene (auto-save on blur).
  * @param sceneId - UUID scene.
  * @param title - Tiêu đề mới.

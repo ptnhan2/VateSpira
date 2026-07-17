@@ -12,9 +12,11 @@ import {
 } from "@/lib/beats";
 import {
   createScene,
+  deleteScene,
   listScenes,
   type Scene,
 } from "@/lib/scenes";
+import { deleteChapter, listChapters, type Chapter } from "@/lib/chapters";
 import SceneCard from "./plot/scene-card";
 
 /**
@@ -64,20 +66,23 @@ function mergeBeats(dbBeats: Beat[], novelId: string): MergedBeat[] {
 export default function PlotContent({
   novelId,
   onWriteChapter,
+  onReadChapter,
 }: {
   novelId: string;
   onWriteChapter: (scene: Scene) => void;
+  onReadChapter: (chapter: Chapter) => void;
 }) {
   const [beats, setBeats] = useState<MergedBeat[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!novelId) return;
     let cancelled = false;
-    Promise.allSettled([listBeats(novelId), listScenes(novelId)])
-      .then(([beatsResult, scenesResult]) => {
+    Promise.allSettled([listBeats(novelId), listScenes(novelId), listChapters(novelId)])
+      .then(([beatsResult, scenesResult, chaptersResult]) => {
         if (beatsResult.status === "fulfilled") {
           setBeats(mergeBeats(beatsResult.value, novelId));
         } else {
@@ -90,6 +95,9 @@ export default function PlotContent({
         }
         if (scenesResult.status === "fulfilled") {
           setScenes(scenesResult.value);
+        }
+        if (chaptersResult.status === "fulfilled") {
+          setChapters(chaptersResult.value);
         }
       })
       .finally(() => {
@@ -137,6 +145,26 @@ export default function PlotContent({
     setScenes((prev) => [...prev, scene]);
   }
 
+  /** Xoá scene — gọi deleteScene, cập nhật state. */
+  async function handleDeleteScene(sceneId: string) {
+    try {
+      await deleteScene(sceneId);
+      setScenes((prev) => prev.filter((s) => s.id !== sceneId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể xoá scene.");
+    }
+  }
+
+  /** Xoá chapter — gọi deleteChapter, cập nhật state. */
+  async function handleDeleteChapter(chapterId: string) {
+    try {
+      await deleteChapter(chapterId);
+      setChapters((prev) => prev.filter((c) => c.id !== chapterId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể xoá chapter.");
+    }
+  }
+
   return (
     <div className="max-w-3xl">
       {loading && <p className="mt-4 text-sm text-muted">Đang tải beat sheet…</p>}
@@ -174,10 +202,67 @@ export default function PlotContent({
                   onSceneSaved={handleSceneSaved}
                   onSceneAdded={handleSceneAdded}
                   onWriteChapter={onWriteChapter}
+                  onDeleteScene={handleDeleteScene}
                 />
               ))}
           </section>
         ))}
+
+      {/* Chapter list — chương đã viết */}
+      {!loading && (
+        <section className="mt-8">
+          <div className="flex items-baseline justify-between border-b border-line pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
+              Chương đã viết
+            </h2>
+            <span className="font-mono text-[11px] text-muted">
+              {chapters.length} chương
+            </span>
+          </div>
+          {chapters.length === 0 ? (
+            <p className="py-4 text-sm text-muted">
+              Chưa có chương. Viết outline cho scene rồi click &ldquo;Viết chương&rdquo;.
+            </p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {chapters.map((chapter) => (
+                <li key={chapter.id} className="flex items-center gap-3 py-3">
+                  <span className="font-mono text-sm text-vermilion dark:text-terracotta">
+                    {String(chapter.number).padStart(2, "0")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onReadChapter(chapter)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className="block truncate font-serif text-[15px] text-ink hover:text-vermilion dark:hover:text-terracotta">
+                      {chapter.title ?? "Chưa đặt tên"}
+                    </span>
+                  </button>
+                  <span
+                    className={`h-2 w-2 flex-none rounded-full ${chapter.status === "final" ? "bg-sage" : chapter.status === "revised" ? "bg-vermilion dark:bg-terracotta" : "border border-muted"}`}
+                    aria-label={chapter.status}
+                  />
+                  <span className="font-mono text-xs text-muted">
+                    {chapter.word_count}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Xoá chương ${chapter.number}?`)) {
+                        void handleDeleteChapter(chapter.id);
+                      }
+                    }}
+                    className="text-xs text-muted transition-colors hover:text-vermilion dark:hover:text-terracotta"
+                  >
+                    Xoá
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }
@@ -194,6 +279,7 @@ function BeatSlot({
   onSceneSaved,
   onSceneAdded,
   onWriteChapter,
+  onDeleteScene,
 }: {
   novelId: string;
   beat: MergedBeat;
@@ -202,6 +288,7 @@ function BeatSlot({
   onSceneSaved: (saved: Scene) => void;
   onSceneAdded: (scene: Scene) => void;
   onWriteChapter: (scene: Scene) => void;
+  onDeleteScene: (sceneId: string) => void;
 }) {
   const [content, setContent] = useState(beat.content ?? "");
   const [isDirty, setIsDirty] = useState(false);
@@ -297,12 +384,13 @@ function BeatSlot({
         {isExpanded && (
           <div className="mt-3 ml-4 border-l-2 border-line pl-4">
             {scenes.map((scene) => (
-              <SceneCard
-                key={scene.id}
-                scene={scene}
-                onSaved={onSceneSaved}
-                onWriteChapter={onWriteChapter}
-              />
+                <SceneCard
+                  key={scene.id}
+                  scene={scene}
+                  onSaved={onSceneSaved}
+                  onWriteChapter={onWriteChapter}
+                  onDelete={onDeleteScene}
+                />
             ))}
             {beat.id ? (
               <button
