@@ -148,7 +148,7 @@ Namespace `(user_id, "memories")`.
 ```
 checkpoints (thread_id, state JSON)          -- LangGraph checkpointer (Postgres)
 store (namespace, key, value)                -- StoreBackend persistence
-rubric_evaluations (id, thread_id, rubric_id, result, criteria JSONB, created_at)
+rubric_evaluations (id, novel_id, thread_id, rubric_id, result, criteria JSONB, explanation, created_at)
 eval_runs (id, scenario_id, model, scores JSONB, created_at)  -- offline eval
 ```
 
