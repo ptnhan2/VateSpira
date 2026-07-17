@@ -177,42 +177,9 @@ export default function PlotContent({
         </div>
       )}
 
-      {!loading &&
-        ([1, 2, 3] as const).map((act) => (
-          <section key={act} className="mt-6 first:mt-0">
-            <div className="flex items-baseline justify-between border-b border-line pb-2">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">
-                {ACT_LABELS[act].name}
-              </h2>
-              <span className="font-mono text-[11px] text-muted">
-                {ACT_LABELS[act].range}
-              </span>
-            </div>
-            {beats
-              .filter((b) => b.act === act)
-              .map((beat) => (
-                <BeatSlot
-                  key={beat.beat_number}
-                  novelId={novelId}
-                  beat={beat}
-                  onSaved={handleSaved}
-                  scenes={
-                    beat.id
-                      ? scenes.filter((s) => s.beat_id === beat.id)
-                      : []
-                  }
-                  onSceneSaved={handleSceneSaved}
-                  onSceneAdded={handleSceneAdded}
-                  onWriteChapter={onWriteChapter}
-                  onDeleteScene={handleDeleteScene}
-                />
-              ))}
-          </section>
-        ))}
-
-      {/* Chapter list — chương đã viết */}
+      {/* Chapter list — chương đã viết (ở đầu trang, trước beat sheet) */}
       {!loading && (
-        <section className="mt-8">
+        <section className="mt-4">
           <div className="flex items-baseline justify-between border-b border-line pb-2">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
               Chương đã viết
@@ -265,6 +232,39 @@ export default function PlotContent({
           )}
         </section>
       )}
+
+      {!loading &&
+        ([1, 2, 3] as const).map((act) => (
+          <section key={act} className="mt-6 first:mt-0">
+            <div className="flex items-baseline justify-between border-b border-line pb-2">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">
+                {ACT_LABELS[act].name}
+              </h2>
+              <span className="font-mono text-[11px] text-muted">
+                {ACT_LABELS[act].range}
+              </span>
+            </div>
+            {beats
+              .filter((b) => b.act === act)
+              .map((beat) => (
+                <BeatSlot
+                  key={beat.beat_number}
+                  novelId={novelId}
+                  beat={beat}
+                  onSaved={handleSaved}
+                  scenes={
+                    beat.id
+                      ? scenes.filter((s) => s.beat_id === beat.id)
+                      : []
+                  }
+                  onSceneSaved={handleSceneSaved}
+                  onSceneAdded={handleSceneAdded}
+                  onWriteChapter={onWriteChapter}
+                  onDeleteScene={handleDeleteScene}
+                />
+              ))}
+          </section>
+        ))}
     </div>
   );
 }
