@@ -520,3 +520,237 @@ class TestE2EChapters:
             user_id="00000000-0000-0000-0000-000000000000",
         )
         assert result is None
+
+
+# =============================================================================
+# Mock tests — codex_service.update_chapter_status (AC-1)
+# =============================================================================
+
+
+def test_update_chapter_status_updates_when_owned():
+    """update_chapter_status update status + updated_at khi chapter thuộc user."""
+    client, builder = _make_supabase_mock()
+    result_check = MagicMock(data=[{"id": "ch1", "status": "draft"}])
+    result_update = MagicMock(data=[{"id": "ch1", "status": "final"}])
+    builder.execute.side_effect = [result_check, result_update]
+    with patch.object(codex_service, "_get_client", return_value=client):
+        result = codex_service.update_chapter_status(
+            chapter_id="ch1", status="final", user_id="u1"
+        )
+    assert result["status"] == "final"
+    update_payload = builder.update.call_args[0][0]
+    assert update_payload["status"] == "final"
+    assert "updated_at" in update_payload
+    eq_calls = builder.eq.call_args_list
+    assert any(c == (("id", "ch1"),) for c in eq_calls)
+    assert any(c == (("novels.user_id", "u1"),) for c in eq_calls)
+
+
+def test_update_chapter_status_returns_none_when_not_owned():
+    """update_chapter_status trả None khi chapter không thuộc user."""
+    client, _ = _make_supabase_mock(data=[])
+    with patch.object(codex_service, "_get_client", return_value=client):
+        result = codex_service.update_chapter_status(
+            chapter_id="ch1", status="final", user_id="wrong"
+        )
+    assert result is None
+
+
+# =============================================================================
+# Mock tests — codex_service.save_rubric_evaluation (AC-2)
+# =============================================================================
+
+
+def test_save_rubric_evaluation_inserts_with_chapter_id_as_rubric_id():
+    """save_rubric_evaluation insert row với rubric_id=chapter_id."""
+    client, builder = _make_supabase_mock()
+    result_insert = MagicMock(
+        data=[{"id": "re1", "rubric_id": "ch1", "result": "satisfied"}]
+    )
+    builder.execute.return_value = result_insert
+    with (
+        patch.object(codex_service, "_get_client", return_value=client),
+        patch.object(codex_service, "get_novel", return_value={"id": "n1"}),
+    ):
+        result = codex_service.save_rubric_evaluation(
+            novel_id="n1",
+            chapter_id="ch1",
+            result="satisfied",
+            criteria_json=[{"name": "Pacing", "passed": True}],
+            user_id="u1",
+        )
+    assert result["rubric_id"] == "ch1"
+    insert_payload = builder.insert.call_args[0][0]
+    assert insert_payload["novel_id"] == "n1"
+    assert insert_payload["rubric_id"] == "ch1"
+    assert insert_payload["result"] == "satisfied"
+    assert insert_payload["criteria"] == [{"name": "Pacing", "passed": True}]
+
+
+def test_save_rubric_evaluation_returns_none_when_novel_not_owned():
+    """save_rubric_evaluation trả None khi novel không thuộc user."""
+    client, _ = _make_supabase_mock(data=[])
+    with (
+        patch.object(codex_service, "_get_client", return_value=client),
+        patch.object(codex_service, "get_novel", return_value=None),
+    ):
+        result = codex_service.save_rubric_evaluation(
+            novel_id="n1",
+            chapter_id="ch1",
+            result="satisfied",
+            criteria_json=[],
+            user_id="wrong",
+        )
+    assert result is None
+
+
+def test_save_rubric_evaluation_none_criteria_becomes_empty_list():
+    """save_rubric_evaluation lưu [] khi criteria_json=None."""
+    client, builder = _make_supabase_mock()
+    result_insert = MagicMock(data=[{"id": "re1"}])
+    builder.execute.return_value = result_insert
+    with (
+        patch.object(codex_service, "_get_client", return_value=client),
+        patch.object(codex_service, "get_novel", return_value={"id": "n1"}),
+    ):
+        codex_service.save_rubric_evaluation(
+            novel_id="n1",
+            chapter_id="ch1",
+            result="failed",
+            criteria_json=None,
+            user_id="u1",
+        )
+    insert_payload = builder.insert.call_args[0][0]
+    assert insert_payload["criteria"] == []
+
+
+# =============================================================================
+# Mock tests — status mapping + on_evaluation callback (AC-3, AC-4)
+# =============================================================================
+
+
+def test_rubric_status_to_chapter_status_mapping():
+    """RUBRIC_STATUS_TO_CHAPTER_STATUS map đúng 5 rubric results (AC-4)."""
+    mapping = codex_service.RUBRIC_STATUS_TO_CHAPTER_STATUS
+    assert mapping["satisfied"] == "final"
+    assert mapping["needs_revision"] == "revised"
+    assert mapping["max_iterations_reached"] == "revised"
+    assert mapping["failed"] == "draft"
+    assert mapping["grader_error"] == "draft"
+
+
+def test_log_rubric_evaluation_logs_without_raising():
+    """_log_rubric_evaluation log evaluation mà không raise (AC-3)."""
+    evaluation = {
+        "grading_run_id": "run1",
+        "iteration": 0,
+        "result": "satisfied",
+        "explanation": "All criteria pass.",
+        "criteria": [],
+    }
+    # Should not raise
+    agent._log_rubric_evaluation(evaluation)
+
+
+def test_agent_rubric_middleware_wired_with_on_evaluation():
+    """RubricMiddleware trong agent construction có on_evaluation wired (AC-3)."""
+    import inspect
+
+    assert callable(agent._log_rubric_evaluation)
+    source = inspect.getsource(agent)
+    assert "on_evaluation=_log_rubric_evaluation" in source
+
+
+# =============================================================================
+# E2E tests — update_chapter_status + save_rubric_evaluation (real Supabase)
+# =============================================================================
+
+
+@pytest.mark.skipif(not _E2E_USER_ID, reason="VATESPIRA_DEV_USER_ID not set")
+class TestE2ERubricPersistence:
+    """E2E tests cho update_chapter_status + save_rubric_evaluation."""
+
+    @pytest.fixture
+    def test_novel(self):
+        """Tạo test novel cho E2E, cleanup sau test (cascade delete)."""
+        novel = codex_service.create_novel(
+            user_id=_E2E_USER_ID, title="E2E Test Rubric Novel"
+        )
+        yield novel
+        client = codex_service._get_client()
+        client.table("novels").delete().eq("id", novel["id"]).execute()
+
+    def test_e2e_update_chapter_status(self, test_novel):
+        """update_chapter_status đổi status draft→final trên real DB."""
+        chapter = codex_service.create_chapter(
+            novel_id=test_novel["id"],
+            chapter_number=1,
+            title="Ch1",
+            content="some content",
+            user_id=_E2E_USER_ID,
+        )
+        updated = codex_service.update_chapter_status(
+            chapter_id=chapter["id"], status="final", user_id=_E2E_USER_ID
+        )
+        assert updated["status"] == "final"
+        listed = codex_service.list_chapters(
+            novel_id=test_novel["id"], user_id=_E2E_USER_ID
+        )
+        assert listed[0]["status"] == "final"
+
+    def test_e2e_update_chapter_status_wrong_user(self, test_novel):
+        """update_chapter_status wrong user → None."""
+        chapter = codex_service.create_chapter(
+            novel_id=test_novel["id"],
+            chapter_number=1,
+            title="Ch1",
+            content="content",
+            user_id=_E2E_USER_ID,
+        )
+        result = codex_service.update_chapter_status(
+            chapter_id=chapter["id"],
+            status="final",
+            user_id="00000000-0000-0000-0000-000000000000",
+        )
+        assert result is None
+
+    def test_e2e_save_rubric_evaluation(self, test_novel):
+        """save_rubric_evaluation insert row vào rubric_evaluations, verify persist."""
+        chapter = codex_service.create_chapter(
+            novel_id=test_novel["id"],
+            chapter_number=1,
+            title="Ch1",
+            content="content",
+            user_id=_E2E_USER_ID,
+        )
+        eval_row = codex_service.save_rubric_evaluation(
+            novel_id=test_novel["id"],
+            chapter_id=chapter["id"],
+            result="satisfied",
+            criteria_json=[{"name": "Pacing", "passed": True}],
+            user_id=_E2E_USER_ID,
+        )
+        assert eval_row["result"] == "satisfied"
+        assert eval_row["rubric_id"] == chapter["id"]
+        # Verify row persists in DB
+        client = codex_service._get_client()
+        rows = (
+            client.table("rubric_evaluations")
+            .select("*")
+            .eq("novel_id", test_novel["id"])
+            .execute()
+        )
+        assert len(rows.data) == 1
+        assert rows.data[0]["result"] == "satisfied"
+        assert rows.data[0]["rubric_id"] == chapter["id"]
+
+    def test_e2e_save_rubric_evaluation_wrong_user(self, test_novel):
+        """save_rubric_evaluation wrong user → None."""
+        result = codex_service.save_rubric_evaluation(
+            novel_id=test_novel["id"],
+            chapter_id="ch-fake",
+            result="satisfied",
+            criteria_json=[],
+            user_id="00000000-0000-0000-0000-000000000000",
+        )
+        assert result is None

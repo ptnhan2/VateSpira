@@ -445,3 +445,92 @@ def get_chapter(
     if not result.data:
         return None
     return result.data[0]
+
+
+RUBRIC_STATUS_TO_CHAPTER_STATUS = {
+    "satisfied": "final",
+    "needs_revision": "revised",
+    "max_iterations_reached": "revised",
+    "failed": "draft",
+    "grader_error": "draft",
+}
+"""Mapping rubric result → chapter status cho UF-4b route.
+
+RubricMiddleware chấm xong → route đọc _rubric_status → tra mapping →
+gọi update_chapter_status. grader_error → 'draft' (không xác định chất
+lượng, giữ nguyên draft).
+"""
+
+
+def update_chapter_status(
+    chapter_id: str, status: str, user_id: str
+) -> dict[str, Any] | None:
+    """Cập nhật status cho một chapter, verify ownership qua join novels.
+
+    Args:
+        chapter_id: UUID của chapter cần update.
+        status: Status mới ('draft', 'final', 'revised').
+        user_id: UUID của user (enforce ownership).
+
+    Returns:
+        Dict chapter record đã update, hoặc None nếu chapter không tồn tại
+        hoặc không thuộc user.
+    """
+    client = _get_client()
+    check = (
+        client.table("chapters")
+        .select("*, novels!inner(user_id)")
+        .eq("id", chapter_id)
+        .eq("novels.user_id", user_id)
+        .execute()
+    )
+    if not check.data:
+        return None
+    result = (
+        client.table("chapters")
+        .update(
+            {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+        )
+        .eq("id", chapter_id)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0]
+
+
+def save_rubric_evaluation(
+    novel_id: str,
+    chapter_id: str,
+    result: str,
+    criteria_json: list[dict[str, Any]] | None,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """Lưu rubric evaluation vào rubric_evaluations table.
+
+    chapter_id được lưu vào cột rubric_id (table không có cột chapter_id
+    riêng — xem migration 00001). Verify ownership: novel phải thuộc user.
+
+    Args:
+        novel_id: UUID của novel chứa chapter được đánh giá.
+        chapter_id: UUID của chapter được đánh giá (lưu vào rubric_id).
+        result: Kết quả rubric ('satisfied', 'needs_revision', 'failed',
+            'max_iterations_reached', 'grader_error').
+        criteria_json: List các criterion verdict (từ RubricEvaluation.criteria).
+        user_id: UUID của user (enforce ownership).
+
+    Returns:
+        Dict rubric_evaluation record vừa tạo, hoặc None nếu novel không
+        thuộc user.
+    """
+    if get_novel(novel_id, user_id) is None:
+        return None
+    client = _get_client()
+    payload = {
+        "novel_id": novel_id,
+        "rubric_id": chapter_id,
+        "result": result,
+        "criteria": criteria_json or [],
+    }
+    insert_result = client.table("rubric_evaluations").insert(payload).execute()
+    return insert_result.data[0]
