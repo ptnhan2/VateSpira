@@ -104,14 +104,19 @@ describe("Plot page (beat sheet Save the Cat)", () => {
     listScenesMock.mockResolvedValue([]);
   });
 
-  it("render header + back link về dashboard", async () => {
+  it("render beat sheet content (không còn header/back link — layout cung cấp nav)", async () => {
     listBeatsMock.mockResolvedValue([]);
     render(<PlotPage />);
+    await waitFor(() => expect(listBeatsMock).toHaveBeenCalledTimes(1));
+    // Header + back link đã remove — layout NovelWorkspace cung cấp tab nav
     expect(
-      screen.getByRole("heading", { name: "Beat Sheet" }),
-    ).toBeInTheDocument();
-    const back = screen.getByRole("link", { name: /Quay lại/ });
-    expect(back).toHaveAttribute("href", "/");
+      screen.queryByRole("heading", { name: "Beat Sheet" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Quay lại/ }),
+    ).not.toBeInTheDocument();
+    // Beat content vẫn render
+    expect(screen.getByText("Opening Image")).toBeInTheDocument();
   });
 
   it("render đủ 15 textarea beat", async () => {
