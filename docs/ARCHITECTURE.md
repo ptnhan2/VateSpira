@@ -108,7 +108,7 @@ Browser (Next.js) ──SSE──► LangSmith (agent runtime) ──► deepage
 novels (id, user_id, title, language, genre, pov, tense, technique, created_at, ...)
 beats (id, novel_id, beat_number 1-15, beat_name, content, status, created_at, updated_at)
        -- Save the Cat 15 beat slots per novel; UNIQUE(novel_id, beat_number); RLS via novels.user_id
-scenes (id, novel_id, beat_id, scene_number, title, summary, status, sort_order, created_at, updated_at)
+scenes (id, novel_id, beat_id, scene_number, title, summary, outline, status, sort_order, created_at, updated_at)
        -- concrete events within beats (1:N); UNIQUE(novel_id, beat_id, scene_number); no prose (UF-4)
 characters (id, novel_id, name, age, personality, appearance, arc, pov,
             color_theme, portfolio_data JSONB, ...)
