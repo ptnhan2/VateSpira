@@ -11,10 +11,12 @@ See: docs/ARCHITECTURE.md
 """
 
 import json
+import logging
 from typing import Any
 
 from deepagents import FilesystemPermission, RubricMiddleware, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from deepagents.middleware.rubric import RubricEvaluation
 from deepagents.profiles.provider.provider_profiles import apply_provider_profile
 from langchain.agents.middleware.types import AgentMiddleware
 from langchain.chat_models import init_chat_model
@@ -636,6 +638,28 @@ def list_chapters(runtime: ToolRuntime) -> str:
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
+logger = logging.getLogger(__name__)
+
+
+def _log_rubric_evaluation(evaluation: RubricEvaluation) -> None:
+    """Log mỗi RubricEvaluation cho observability (callback on_evaluation).
+
+    Callback KHÔNG update DB — không có chapter_id trong evaluation object.
+    UF-4b route sẽ đọc _rubric_status từ agent result và gọi
+    update_chapter_status + save_rubric_evaluation.
+
+    Args:
+        evaluation: RubricEvaluation dict từ RubricMiddleware (chứa result,
+            explanation, criteria, iteration, grading_run_id).
+    """
+    logger.warning(
+        "RubricEvaluation: result=%s iteration=%s explanation=%s",
+        evaluation.get("result"),
+        evaluation.get("iteration"),
+        evaluation.get("explanation", ""),
+    )
+
+
 agent = create_deep_agent(
     model="deepseek:deepseek-chat",  # MVP priority #1; overridden by BYOK @wrap_model_call
     system_prompt=WRITING_COLLABORATOR_PROMPT,
@@ -651,6 +675,7 @@ agent = create_deep_agent(
             model="deepseek:deepseek-chat",
             system_prompt=CHAPTER_RUBRIC_PROMPT,
             max_iterations=3,
+            on_evaluation=_log_rubric_evaluation,
         ),
     ],
     backend=backend,
