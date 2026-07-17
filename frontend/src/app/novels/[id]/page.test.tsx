@@ -3,22 +3,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 
 /** Mock PlotContent — tránh cần mock beats/scenes dependencies. */
-const { plotContentMock } = vi.hoisted(() => ({
-  plotContentMock: vi.fn(),
-}));
-
 vi.mock("./plot-content", () => ({
-  default: ({
-    novelId,
-    onWriteChapter,
-    onReadChapter,
-    onEditChapter,
-    refreshKey,
-  }: {
+  default: ({ novelId, onWriteChapter }: {
     novelId: string;
     onWriteChapter: (scene: unknown) => void;
-    onReadChapter: (chapter: unknown) => void;
-    onEditChapter: (scene: unknown) => void;
+    onEditChapter?: (scene: unknown) => void;
     refreshKey?: number;
   }) =>
     createElement(
@@ -39,21 +28,6 @@ vi.mock("./plot-content", () => ({
             }),
         },
         "Viết chương",
-      ),
-      createElement(
-        "button",
-        {
-          "data-testid": "read-chapter-btn",
-          onClick: () =>
-            onReadChapter({
-              id: "c1",
-              number: 1,
-              title: "Test Chapter",
-              status: "draft",
-              word_count: 100,
-            }),
-        },
-        "Đọc chương",
       ),
     ),
 }));

@@ -107,30 +107,6 @@ export default function WritingWorkspace() {
     setActiveScene(null);
   }
 
-  /** Click chapter trong list → đọc prose. */
-  function handleReadChapter(chapter: Chapter) {
-    setReadingChapter(chapter);
-    setChapterProse(null);
-    setChapterFilePath(null);
-    setView("reader");
-    void fetch(`/api/novels/${novelId}/manuscript`)
-      .then((res) => res.json())
-      .then((data) => {
-        const files = (data.files as Array<{ path: string; content: string }>) ?? [];
-        const match = files.find(
-          (f) =>
-            f.path.includes(`chapter_${chapter.number}`) ||
-            f.path.includes(`ch-${chapter.number}`) ||
-            f.path.includes(`${chapter.number}.md`),
-        );
-        setChapterFilePath(match?.path ?? null);
-        setChapterProse(match?.content ?? null);
-      })
-      .catch(() => {
-        setChapterProse(null);
-      });
-  }
-
   /** Click "Sửa chương" trên scene → mở reader cho chapter đã có. */
   function handleEditChapter(scene: Scene) {
     // Tìm chapter matching scene_number (best-effort match)
@@ -273,7 +249,6 @@ export default function WritingWorkspace() {
         <PlotContent
           novelId={novelId}
           onWriteChapter={handleWriteChapter}
-          onReadChapter={handleReadChapter}
           onEditChapter={handleEditChapter}
           refreshKey={plotRefreshKey}
         />

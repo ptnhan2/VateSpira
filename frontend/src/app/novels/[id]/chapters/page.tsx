@@ -35,28 +35,30 @@ export default function ChaptersPage() {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [manuscriptFiles, setManuscriptFiles] = useState<ManuscriptFile[]>([]);
 
-  /** Refresh chapter list từ Supabase. */
-  async function refreshChapters() {
-    try {
-      setChapters(await listChapters(novelId));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Không thể tải chapters.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
     if (!novelId) return;
-    void refreshChapters();
+    let cancelled = false;
+    void listChapters(novelId)
+      .then((list) => {
+        if (!cancelled) setChapters(list);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Không thể tải chapters.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     void fetch(`/api/novels/${novelId}/manuscript`)
       .then((res) => res.json())
-      .then((data) =>
-        setManuscriptFiles(
-          (data.files as ManuscriptFile[]) ?? [],
-        ),
-      )
+      .then((data) => {
+        if (!cancelled)
+          setManuscriptFiles((data.files as ManuscriptFile[]) ?? []);
+      })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [novelId]);
 
   /** Click chapter → load prose. */

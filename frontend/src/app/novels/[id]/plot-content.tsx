@@ -16,7 +16,7 @@ import {
   listScenes,
   type Scene,
 } from "@/lib/scenes";
-import { deleteChapter, listChapters, type Chapter } from "@/lib/chapters";
+import { listChapters, type Chapter } from "@/lib/chapters";
 import SceneCard from "./plot/scene-card";
 
 /**
@@ -66,13 +66,11 @@ function mergeBeats(dbBeats: Beat[], novelId: string): MergedBeat[] {
 export default function PlotContent({
   novelId,
   onWriteChapter,
-  onReadChapter,
   onEditChapter,
   refreshKey = 0,
 }: {
   novelId: string;
   onWriteChapter: (scene: Scene) => void;
-  onReadChapter: (chapter: Chapter) => void;
   onEditChapter: (scene: Scene) => void;
   refreshKey?: number;
 }) {
@@ -156,16 +154,6 @@ export default function PlotContent({
       setScenes((prev) => prev.filter((s) => s.id !== sceneId));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không thể xoá scene.");
-    }
-  }
-
-  /** Xoá chapter — gọi deleteChapter, cập nhật state. */
-  async function handleDeleteChapter(chapterId: string) {
-    try {
-      await deleteChapter(chapterId);
-      setChapters((prev) => prev.filter((c) => c.id !== chapterId));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Không thể xoá chapter.");
     }
   }
 
