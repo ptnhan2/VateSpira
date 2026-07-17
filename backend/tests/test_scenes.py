@@ -184,22 +184,23 @@ def test_create_scene_returns_none_when_novel_not_owned():
 # =============================================================================
 
 
-def test_update_scene_updates_title_and_summary():
-    """update_scene gửi update payload {title, summary}."""
+def test_update_scene_updates_title_summary_and_outline():
+    """update_scene gửi update payload {title, summary, outline}."""
     client, builder = _make_supabase_mock()
     result_check = MagicMock(data=[{"id": "s1", "novel_id": "n1"}])
     result_update = MagicMock(
-        data=[{"id": "s1", "title": "New", "summary": "NewSum"}]
+        data=[{"id": "s1", "title": "New", "summary": "NewSum", "outline": "O"}]
     )
     builder.execute.side_effect = [result_check, result_update]
     with patch.object(codex_service, "_get_client", return_value=client):
         result = codex_service.update_scene(
-            scene_id="s1", title="New", summary="NewSum", user_id="u1"
+            scene_id="s1", title="New", summary="NewSum", outline="O", user_id="u1"
         )
     assert result["title"] == "New"
     update_payload = builder.update.call_args[0][0]
     assert update_payload["title"] == "New"
     assert update_payload["summary"] == "NewSum"
+    assert update_payload["outline"] == "O"
 
 
 def test_update_scene_returns_none_when_not_owned():
@@ -209,7 +210,7 @@ def test_update_scene_returns_none_when_not_owned():
     builder.execute.return_value = result_check
     with patch.object(codex_service, "_get_client", return_value=client):
         result = codex_service.update_scene(
-            scene_id="s1", title="New", summary="NewSum", user_id="wrong"
+            scene_id="s1", title="New", summary="NewSum", outline="O", user_id="wrong"
         )
     assert result is None
 
@@ -357,20 +358,20 @@ def test_create_scene_tool_raises_without_user_id():
 
 
 def test_update_scene_tool_calls_service_and_returns_json():
-    """update_scene tool trích xuất user_id, gọi service với scene_id."""
+    """update_scene tool trích xuất user_id, gọi service với scene_id + outline."""
     rt = _make_runtime(user_id="u1")
     with patch.object(
         agent.codex_service,
         "update_scene",
-        return_value={"id": "s1", "title": "New", "summary": "NewSum"},
+        return_value={"id": "s1", "title": "New", "summary": "NewSum", "outline": "O"},
     ) as mock_fn:
         result = agent.update_scene.func(
-            scene_id="s1", title="New", summary="NewSum", runtime=rt
+            scene_id="s1", title="New", summary="NewSum", outline="O", runtime=rt
         )
     parsed = json.loads(result)
     assert parsed["title"] == "New"
     mock_fn.assert_called_once_with(
-        scene_id="s1", title="New", summary="NewSum", user_id="u1"
+        scene_id="s1", title="New", summary="NewSum", outline="O", user_id="u1"
     )
 
 
@@ -379,7 +380,7 @@ def test_update_scene_tool_returns_error_when_not_found():
     rt = _make_runtime(user_id="u1")
     with patch.object(agent.codex_service, "update_scene", return_value=None):
         result = agent.update_scene.func(
-            scene_id="s1", title="New", summary="NewSum", runtime=rt
+            scene_id="s1", title="New", summary="NewSum", outline="", runtime=rt
         )
     parsed = json.loads(result)
     assert "error" in parsed
@@ -392,7 +393,7 @@ def test_update_scene_tool_raises_without_user_id():
     with patch.object(agent.codex_service, "update_scene") as mock_fn:
         with pytest.raises(ValueError, match="user_id"):
             agent.update_scene.func(
-                scene_id="s1", title="New", summary="NewSum", runtime=rt
+                scene_id="s1", title="New", summary="NewSum", outline="", runtime=rt
             )
     mock_fn.assert_not_called()
 
@@ -473,7 +474,7 @@ class TestE2EScenes:
         assert listed[0]["status"] == "empty"
 
     def test_e2e_update_scene(self, test_novel):
-        """update_scene sửa title + summary → list_scenes verify."""
+        """update_scene sửa title + summary + outline → list_scenes verify."""
         beat_id = self._get_first_beat_id(test_novel["id"])
         scene = codex_service.create_scene(
             novel_id=test_novel["id"],
@@ -486,14 +487,17 @@ class TestE2EScenes:
             scene_id=scene["id"],
             title="New Title",
             summary="New sum",
+            outline="Detailed outline text",
             user_id=_E2E_USER_ID,
         )
         assert updated["title"] == "New Title"
         assert updated["summary"] == "New sum"
+        assert updated["outline"] == "Detailed outline text"
         listed = codex_service.list_scenes(
             novel_id=test_novel["id"], user_id=_E2E_USER_ID
         )
         assert listed[0]["title"] == "New Title"
+        assert listed[0]["outline"] == "Detailed outline text"
 
     def test_e2e_list_scenes_wrong_user_returns_empty(self, test_novel):
         """list_scenes với wrong user_id → empty list (ownership enforced)."""
