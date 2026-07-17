@@ -556,14 +556,16 @@ def update_scene(
     scene_id: str,
     title: str,
     summary: str,
+    outline: str,
     runtime: ToolRuntime,
 ) -> str:
-    """Cập nhật title + summary cho một scene theo scene_id.
+    """Cập nhật title + summary + outline cho một scene theo scene_id.
 
     Args:
         scene_id: UUID của scene cần update.
         title: Tiêu đề scene mới.
         summary: Tóm tắt mới.
+        outline: Dàn ý chi tiết scene (tình tiết tuần tự + dialogue markers).
 
     Returns:
         JSON string chứa scene record đã update, hoặc error nếu không tìm thấy.
@@ -573,6 +575,7 @@ def update_scene(
         scene_id=scene_id,
         title=title,
         summary=summary or None,
+        outline=outline or None,
         user_id=user_id,
     )
     if result is None:

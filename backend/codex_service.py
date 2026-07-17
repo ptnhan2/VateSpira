@@ -8,10 +8,13 @@ See: docs/ARCHITECTURE.md Section 3.1 (ERD — novels table),
      docs/ARCHITECTURE.md Section 7.2 (API Contracts)
 """
 
+import functools
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any
 
+import httpx
 from supabase import Client, create_client
 
 _client: Client | None = None
@@ -44,6 +47,42 @@ def _get_client() -> Client:
     return _client
 
 
+def _retry_on_httpx_error(max_retries: int = 2, base_delay: float = 0.5):
+    """Decorator retry khi httpx.ReadError (Windows socket issue trong agent runtime).
+
+    Agent runtime gọi @tool qua run_in_executor (thread pool). Sync httpx.Client
+    dùng từ thread khác có thể gặp WinError 10035 (WSAEWOULDBLOCK) — non-blocking
+    socket conflict giữa async event loop và sync client. Retry 2 lần với delay
+    tăng dần xử lý transient issue.
+
+    Args:
+        max_retries: Số lần retry (default 2).
+        base_delay: Delay cơ bản (giây), nhân với (attempt+1) (default 0.5).
+
+    Returns:
+        Decorator function.
+    """
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            last_error: Exception | None = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return fn(*args, **kwargs)
+                except httpx.ReadError as e:
+                    last_error = e
+                    if attempt < max_retries:
+                        time.sleep(base_delay * (attempt + 1))
+            assert last_error is not None
+            raise last_error
+
+        return wrapper
+
+    return decorator
+
+
+@_retry_on_httpx_error()
 def create_novel(
     user_id: str,
     title: str,
@@ -84,6 +123,7 @@ def create_novel(
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def list_novels(user_id: str) -> list[dict[str, Any]]:
     """Liệt kê tất cả novels của một user, sắp xếp mới nhất trước.
 
@@ -104,6 +144,7 @@ def list_novels(user_id: str) -> list[dict[str, Any]]:
     return result.data
 
 
+@_retry_on_httpx_error()
 def get_novel(novel_id: str, user_id: str) -> dict[str, Any] | None:
     """Lấy một novel theo id, chỉ nếu thuộc user.
 
@@ -127,6 +168,7 @@ def get_novel(novel_id: str, user_id: str) -> dict[str, Any] | None:
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def init_beats(novel_id: str, beat_names: list[str]) -> list[dict[str, Any]]:
     """Khởi tạo 15 beat rows cho novel theo Save the Cat structure.
 
@@ -164,6 +206,7 @@ def init_beats(novel_id: str, beat_names: list[str]) -> list[dict[str, Any]]:
     return result.data
 
 
+@_retry_on_httpx_error()
 def list_beats(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     """Liệt kê 15 beats của novel, verify ownership qua join novels.
 
@@ -187,6 +230,7 @@ def list_beats(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     return result.data
 
 
+@_retry_on_httpx_error()
 def update_beat(
     novel_id: str, beat_number: int, content: str, user_id: str
 ) -> dict[str, Any] | None:
@@ -220,6 +264,7 @@ def update_beat(
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def list_scenes(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     """Liệt kê tất cả scenes của novel, verify ownership qua join novels.
 
@@ -244,12 +289,14 @@ def list_scenes(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     return result.data
 
 
+@_retry_on_httpx_error()
 def create_scene(
     novel_id: str,
     beat_id: str,
     title: str,
     summary: str | None,
     user_id: str,
+    outline: str | None = None,
 ) -> dict[str, Any] | None:
     """Tạo scene mới trong beat, auto-calc scene_number.
 
@@ -263,6 +310,7 @@ def create_scene(
         title: Tiêu đề scene (bắt buộc).
         summary: Tóm tắt 1-2 câu (nullable).
         user_id: UUID của user (enforce ownership).
+        outline: Dàn ý chi tiết scene (nullable, UF-4b scope expansion).
 
     Returns:
         Dict scene record vừa tạo, hoặc None nếu novel không thuộc user.
@@ -284,19 +332,22 @@ def create_scene(
         "scene_number": scene_number,
         "title": title,
         "summary": summary,
+        "outline": outline,
         "status": "empty",
     }
     result = client.table("scenes").insert(payload).execute()
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def update_scene(
     scene_id: str,
     title: str,
     summary: str | None,
     user_id: str,
+    outline: str | None = None,
 ) -> dict[str, Any] | None:
-    """Cập nhật title + summary cho một scene.
+    """Cập nhật title + summary + outline cho một scene.
 
     Verify ownership: scene phải thuộc user (qua join novels). Nếu không
     thuộc user → return None (không update).
@@ -306,6 +357,7 @@ def update_scene(
         title: Tiêu đề scene mới.
         summary: Tóm tắt mới (nullable).
         user_id: UUID của user (enforce ownership).
+        outline: Dàn ý chi tiết mới (nullable, UF-4b scope expansion).
 
     Returns:
         Dict scene record đã update, hoặc None nếu scene không tồn tại
@@ -323,7 +375,7 @@ def update_scene(
         return None
     result = (
         client.table("scenes")
-        .update({"title": title, "summary": summary})
+        .update({"title": title, "summary": summary, "outline": outline})
         .eq("id", scene_id)
         .execute()
     )
@@ -332,6 +384,7 @@ def update_scene(
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def create_chapter(
     novel_id: str,
     chapter_number: int,
@@ -396,6 +449,7 @@ def create_chapter(
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def list_chapters(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     """Liệt kê tất cả chapters của novel, verify ownership qua join novels.
 
@@ -419,6 +473,7 @@ def list_chapters(novel_id: str, user_id: str) -> list[dict[str, Any]]:
     return result.data
 
 
+@_retry_on_httpx_error()
 def get_chapter(
     novel_id: str, chapter_number: int, user_id: str
 ) -> dict[str, Any] | None:
@@ -462,6 +517,7 @@ lượng, giữ nguyên draft).
 """
 
 
+@_retry_on_httpx_error()
 def update_chapter_status(
     chapter_id: str, status: str, user_id: str
 ) -> dict[str, Any] | None:
@@ -499,6 +555,7 @@ def update_chapter_status(
     return result.data[0]
 
 
+@_retry_on_httpx_error()
 def save_rubric_evaluation(
     novel_id: str,
     chapter_id: str,
