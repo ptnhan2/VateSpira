@@ -9,7 +9,7 @@
 | UF-1: Setup - create novel + choose technique | #3 | done | docs/ARCHITECTURE.md Section 4 | 2026-07-15 |
 | UF-2: Build plot skeleton (Save the Cat) | #4 | done | docs/ARCHITECTURE.md Section 4 | 2026-07-16 |
 | UF-3: Expand to scene beats | #5 | done | docs/ARCHITECTURE.md Section 4 | 2026-07-16 |
-| UF-4: Write scene (HITL + rubric) | #6 | in-progress | docs/features/uf4-write-scene.md | 2026-07-17 |
+| UF-4: Write scene (HITL + rubric) | #6 | done | docs/features/uf4-write-scene.md | 2026-07-18 |
 | Follow-up: Chapter status persistence (rubric → chapters.status) | #28 | done | docs/features/uf4-write-scene.md §3 | 2026-07-17 |
 | UF-5: Consistency check | #7 | not-started | docs/ARCHITECTURE.md Section 4 | - |
 | UF-6: Extract from chat (codex growth) | #8 | not-started | docs/ARCHITECTURE.md Section 4 | - |
