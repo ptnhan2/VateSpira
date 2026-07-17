@@ -2,21 +2,44 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 
-/**
- * Holder hoisted — mock listChapters + streamWrite + resumeWrite.
- * Phải dùng vi.hoisted vì vi.mock factory bị hoist (fe-dev-memory: quy tắc hoisting).
- */
-const { listChaptersMock } = vi.hoisted(() => ({
-  listChaptersMock: vi.fn(),
+/** Mock PlotContent — tránh cần mock beats/scenes dependencies. */
+const { plotContentMock } = vi.hoisted(() => ({
+  plotContentMock: vi.fn(),
+}));
+
+vi.mock("./plot-content", () => ({
+  default: ({
+    novelId,
+    onWriteChapter,
+  }: {
+    novelId: string;
+    onWriteChapter: (scene: unknown) => void;
+  }) =>
+    createElement(
+      "div",
+      { "data-testid": "plot-content" },
+      `PlotContent novelId=${novelId}`,
+      createElement(
+        "button",
+        {
+          "data-testid": "write-chapter-btn",
+          onClick: () =>
+            onWriteChapter({
+              id: "s1",
+              scene_number: 1,
+              title: "Test Scene",
+              summary: "Sum",
+              outline: "Outline text",
+            }),
+        },
+        "Viết chương",
+      ),
+    ),
 }));
 
 const { streamWriteMock, resumeWriteMock } = vi.hoisted(() => ({
   streamWriteMock: vi.fn(),
   resumeWriteMock: vi.fn(),
-}));
-
-vi.mock("@/lib/chapters", () => ({
-  listChapters: listChaptersMock,
 }));
 
 vi.mock("@/lib/write", () => ({
@@ -33,138 +56,50 @@ vi.mock("next/link", () => ({
     createElement("a", { href }, children),
 }));
 
-import WritingTab from "./page";
+import WritingWorkspace from "./page";
 
-describe("WritingTab", () => {
+describe("WritingWorkspace (2-panel: Plot + Chat)", () => {
   beforeEach(() => {
-    listChaptersMock.mockReset();
     streamWriteMock.mockReset();
     resumeWriteMock.mockReset();
-    listChaptersMock.mockResolvedValue([]);
-    // jsdom không implement scrollIntoView — mock để tránh TypeError
     Element.prototype.scrollIntoView = vi.fn();
-    // Mock fetch cho manuscript route (gọi on mount)
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        body: null,
-        json: async () => ({ files: [] }),
-      }),
-    );
   });
 
-  it("render chat panel + editor panel khi mount", async () => {
-    render(createElement(WritingTab));
+  it("render PlotContent (center) + Chat panel (right)", async () => {
+    render(createElement(WritingWorkspace));
     await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Viết tin nhắn…"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("plot-content")).toBeInTheDocument();
     });
     expect(
-      screen.getByText("Danh sách chương"),
+      screen.getByPlaceholderText("Viết tin nhắn…"),
     ).toBeInTheDocument();
   });
 
-  it("render empty state khi không có chapters", async () => {
-    render(createElement(WritingTab));
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Chưa có chương/),
-      ).toBeInTheDocument();
-    });
-  });
-
-  it("render chapter list khi có chapters", async () => {
-    listChaptersMock.mockResolvedValue([
-      {
-        id: "c1",
-        novel_id: "n1",
-        number: 1,
-        title: "Khởi đầu",
-        status: "draft",
-        word_count: 500,
-        created_at: "",
-        updated_at: "",
-      },
-    ]);
-    render(createElement(WritingTab));
-    await waitFor(() => {
-      expect(screen.getByText("Khởi đầu")).toBeInTheDocument();
-    });
-  });
-
-  it("gọi streamWrite khi gửi tin nhắn", async () => {
+  it("click 'Viết chương' → gọi streamWrite + hiện Editor", async () => {
     streamWriteMock.mockResolvedValue(undefined);
-    render(createElement(WritingTab));
+    render(createElement(WritingWorkspace));
     await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Viết tin nhắn…"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("write-chapter-btn")).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText(
-      "Viết tin nhắn…",
-    ) as HTMLTextAreaElement;
-    fireEvent.change(input, { target: { value: "viết chương 1" } });
-    fireEvent.click(screen.getByText("Gửi"));
+    fireEvent.click(screen.getByTestId("write-chapter-btn"));
 
     await waitFor(() => {
       expect(streamWriteMock).toHaveBeenCalledWith(
         "novel-test",
-        "viết chương 1",
+        expect.stringContaining("Viết chương"),
         undefined,
         expect.objectContaining({
           onMetadata: expect.any(Function),
-          onState: expect.any(Function),
           onInterrupt: expect.any(Function),
-          onComplete: expect.any(Function),
         }),
       );
     });
+    // Editor panel hiện (loading state)
+    expect(screen.getByText("Đang viết…")).toBeInTheDocument();
   });
 
-  it("hiện HITL approve/reject buttons khi interrupt", async () => {
-    streamWriteMock.mockImplementation(
-      async (
-        _id: string,
-        _msg: string,
-        _uid: string | undefined,
-        cb: {
-          onInterrupt?: (i: unknown) => void;
-        },
-      ) => {
-        cb.onInterrupt?.({
-          threadId: "t1",
-          runId: "r1",
-          toolName: "write_file",
-          path: "/manuscript/test.md",
-          content: "prose đề xuất",
-          description: "approve",
-        });
-      },
-    );
-
-    render(createElement(WritingTab));
-    await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Viết tin nhắn…"),
-      ).toBeInTheDocument();
-    });
-
-    const input = screen.getByPlaceholderText(
-      "Viết tin nhắn…",
-    ) as HTMLTextAreaElement;
-    fireEvent.change(input, { target: { value: "viết chương 1" } });
-    fireEvent.click(screen.getByText("Gửi"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Duyệt")).toBeInTheDocument();
-      expect(screen.getByText("Từ chối")).toBeInTheDocument();
-    });
-  });
-
-  it("hiện proposed prose trong editor khi interrupt", async () => {
+  it("hiện HITL approve/reject + proposed prose khi interrupt", async () => {
     streamWriteMock.mockImplementation(
       async (
         _id: string,
@@ -177,29 +112,42 @@ describe("WritingTab", () => {
           runId: "r1",
           toolName: "write_file",
           path: "/manuscript/test.md",
-          content: "Đây là prose đề xuất cho chương.",
+          content: "Nội dung prose đề xuất từ agent.",
           description: "approve",
         });
       },
     );
 
-    render(createElement(WritingTab));
+    render(createElement(WritingWorkspace));
     await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Viết tin nhắn…"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("write-chapter-btn")).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText(
-      "Viết tin nhắn…",
-    ) as HTMLTextAreaElement;
-    fireEvent.change(input, { target: { value: "viết" } });
-    fireEvent.click(screen.getByText("Gửi"));
+    fireEvent.click(screen.getByTestId("write-chapter-btn"));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Đây là prose đề xuất cho chương."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Duyệt")).toBeInTheDocument();
+      expect(screen.getByText("Từ chối")).toBeInTheDocument();
     });
+    // Proposed prose trong editor
+    expect(
+      screen.getByText("Nội dung prose đề xuất từ agent."),
+    ).toBeInTheDocument();
+  });
+
+  it("đóng editor → hiện lại PlotContent", async () => {
+    streamWriteMock.mockResolvedValue(undefined);
+    render(createElement(WritingWorkspace));
+    await waitFor(() => {
+      expect(screen.getByTestId("write-chapter-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("write-chapter-btn"));
+    await waitFor(() => {
+      expect(screen.getByText("✕ Đóng")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("✕ Đóng"));
+    expect(screen.getByTestId("plot-content")).toBeInTheDocument();
   });
 });

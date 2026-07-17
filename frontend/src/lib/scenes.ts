@@ -1,8 +1,8 @@
 import { supabase } from "@/lib/supabase";
 
 /**
- * Một scene thuộc beat — mirror schema bảng `scenes` (UF-3).
- * Scene là đơn vị chi tiết hơn beat: title + summary, KHÔNG có prose (UF-4 scope).
+ * Một scene thuộc beat — mirror schema bảng `scenes` (UF-3 + UF-4b).
+ * Scene là đơn vị chi tiết hơn beat: title + summary + outline, KHÔNG có prose (UF-4 scope).
  */
 export interface Scene {
   id: string;
@@ -11,6 +11,8 @@ export interface Scene {
   scene_number: number;
   title: string;
   summary: string;
+  /** Dàn ý chi tiết scene (tình tiết tuần tự + dialogue markers). UF-4b scope expansion. */
+  outline: string | null;
   status: string;
   sort_order: number;
   created_at: string;
@@ -66,20 +68,22 @@ export async function createScene(
 }
 
 /**
- * Cập nhật title + summary của scene (auto-save on blur).
+ * Cập nhật title + summary + outline của scene (auto-save on blur).
  * @param sceneId - UUID scene.
  * @param title - Tiêu đề mới.
  * @param summary - Tóm tắt mới.
+ * @param outline - Dàn ý chi tiết mới.
  * @returns Scene đã cập nhật.
  */
 export async function updateScene(
   sceneId: string,
   title: string,
   summary: string,
+  outline: string,
 ): Promise<Scene> {
   const { data, error } = await supabase
     .from("scenes")
-    .update({ title, summary })
+    .update({ title, summary, outline: outline || null })
     .eq("id", sceneId)
     .select()
     .single();

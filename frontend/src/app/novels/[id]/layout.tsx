@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 
-/** Định nghĩa 4 tab — label + path suffix (relative to /novels/[id]). */
+/** Định nghĩa 3 tab — Plot là entry point (default). Writing tab đã bỏ (UF-4b redesign). */
 const TABS = [
-  { label: "Writing", suffix: "" },
-  { label: "Plot", suffix: "/plot" },
+  { label: "Plot", suffix: "" },
   { label: "Codex", suffix: "/codex" },
   { label: "Review", suffix: "/review" },
 ] as const;

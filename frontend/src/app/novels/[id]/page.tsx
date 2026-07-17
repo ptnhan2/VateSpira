@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
-import { listChapters, type Chapter } from "@/lib/chapters";
+import PlotContent from "./plot-content";
 import {
   resumeWrite,
   streamWrite,
@@ -11,28 +11,22 @@ import {
   type HitlInterrupt,
   type WriteComplete,
 } from "@/lib/write";
+import type { Scene } from "@/lib/scenes";
 
-/** Manuscript file từ /api/novels/[id]/manuscript (path + prose content). */
-interface ManuscriptFile {
-  path: string;
-  content: string;
-}
-
-/** View state cho editor panel — quyết định hiển thị gì. */
-type EditorView = "chapters" | "proposed" | "reader";
+/** View state cho center panel — Plot (mặc định) hoặc Editor (khi đang viết). */
+type CenterView = "plot" | "editor";
 
 /**
- * Writing tab — 2-panel layout (editor center + chat right).
+ * Writing workspace — 2-panel layout: Plot (center) + Chat (right, 320px persistent).
  *
- * Chat panel (right, 320px cố định): message list + input + HITL approve/reject.
- * Editor panel (center, flex-1): chapter list (mặc định) / proposed prose (HITL)
- * / chapter reader (click chapter).
+ * Plot là entry point. Mỗi scene card có nút "Viết chương" (khi có outline) →
+ * center panel chuyển sang Editor (proposed prose) + chat panel bắt đầu stream
+ * agent với scene context. HITL: approve/reject trong chat panel, proposed prose
+ * trong editor panel.
  *
- * Flow: user chat → streamWrite → agent responds → HITL interrupt → proposed
- * prose in editor + approve/reject in chat → resumeWrite (approve/reject) →
- * complete → refresh chapter list.
+ * @param params - Dynamic route params `{ id: string }` (novelId).
  */
-export default function WritingTab() {
+export default function WritingWorkspace() {
   const params = useParams<{ id: string }>();
   const novelId = params.id;
 
@@ -43,60 +37,76 @@ export default function WritingTab() {
   const [interrupt, setInterrupt] = useState<HitlInterrupt | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [view, setView] = useState<CenterView>("plot");
+  const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [proposedProse, setProposedProse] = useState<string | null>(null);
-  const [manuscriptFiles, setManuscriptFiles] = useState<ManuscriptFile[]>([]);
-  const [view, setView] = useState<EditorView>("chapters");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  /** Refresh chapter list từ Supabase. */
-  const refreshChapters = useCallback(async () => {
-    try {
-      setChapters(await listChapters(novelId));
-    } catch {
-      // Non-fatal — chapter list có thể rỗng
-    }
-  }, [novelId]);
-
-  // Load chapters + manuscript files on mount (inline để tránh set-state-in-effect lint)
-  useEffect(() => {
-    if (!novelId) return;
-    let cancelled = false;
-    void listChapters(novelId)
-      .then((list) => {
-        if (!cancelled) setChapters(list);
-      })
-      .catch(() => {});
-    void fetch(`/api/novels/${novelId}/manuscript`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled)
-          setManuscriptFiles((data.files as ManuscriptFile[]) ?? []);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [novelId]);
-
-  // Auto-scroll to bottom khi messages thay đổi
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /** Gửi tin nhắn — start agent stream. */
+  /**
+   * Xây dựng message cho agent khi click "Viết chương" — include scene context.
+   * @param scene - Scene được chọn (có title, summary, outline).
+   * @returns Message string cho agent.
+   */
+  function buildSceneMessage(scene: Scene): string {
+    const parts = [`Viết chương cho novel này.`];
+    parts.push(`Scene ${scene.scene_number}: ${scene.title || "chưa đặt tên"}.`);
+    if (scene.summary) parts.push(`Tóm tắt: ${scene.summary}`);
+    if (scene.outline) parts.push(`Dàn ý: ${scene.outline}`);
+    parts.push(
+      `Dựa vào context novel, beats, scenes, memories, viết prose cho chương này.`,
+    );
+    return parts.join(" ");
+  }
+
+  /** Click "Viết chương" trên scene card — start agent stream với scene context. */
+  function handleWriteChapter(scene: Scene) {
+    setActiveScene(scene);
+    setView("editor");
+    setProposedProse(null);
+    setError(null);
+    setMessages([{ role: "human", content: buildSceneMessage(scene) }]);
+    setIsStreaming(true);
+
+    void streamWrite(novelId, buildSceneMessage(scene), undefined, {
+      onMetadata: (meta) => setThreadId(meta.threadId),
+      onState: (msgs) => setMessages(msgs),
+      onInterrupt: (intr) => {
+        setInterrupt(intr);
+        setProposedProse(intr.content);
+        setIsStreaming(false);
+      },
+      onComplete: (result: WriteComplete) => {
+        setIsStreaming(false);
+        setInterrupt(null);
+        setProposedProse(null);
+        if (result.chapterId) setView("plot");
+      },
+      onError: (err) => {
+        setError(err);
+        setIsStreaming(false);
+      },
+    });
+  }
+
+  /** Đóng editor → về Plot view. */
+  function handleCloseEditor() {
+    setView("plot");
+    setProposedProse(null);
+    setActiveScene(null);
+  }
+
+  /** Gửi tin nhắn chat (khi không trong editing flow). */
   async function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
     setInput("");
     setError(null);
-    setProposedProse(null);
-    setMessages((prev) => [
-      ...prev,
-      { role: "human", content: trimmed },
-    ]);
+    setMessages((prev) => [...prev, { role: "human", content: trimmed }]);
     setIsStreaming(true);
 
     await streamWrite(novelId, trimmed, undefined, {
@@ -105,15 +115,12 @@ export default function WritingTab() {
       onInterrupt: (intr) => {
         setInterrupt(intr);
         setProposedProse(intr.content);
-        setView("proposed");
         setIsStreaming(false);
       },
-      onComplete: (result: WriteComplete) => {
+      onComplete: () => {
         setIsStreaming(false);
         setInterrupt(null);
         setProposedProse(null);
-        void refreshChapters();
-        if (result.chapterId) setView("chapters");
       },
       onError: (err) => {
         setError(err);
@@ -133,8 +140,7 @@ export default function WritingTab() {
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
-        void refreshChapters();
-        setView("chapters");
+        setView("plot");
       },
       onError: (err) => {
         setError(err);
@@ -154,19 +160,12 @@ export default function WritingTab() {
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
-        setView("chapters");
       },
       onError: (err) => {
         setError(err);
         setIsStreaming(false);
       },
     });
-  }
-
-  /** Chọn chapter để đọc prose. */
-  function handleSelectChapter(chapter: Chapter) {
-    setSelectedChapter(chapter);
-    setView("reader");
   }
 
   /** Enter để gửi, Shift+Enter để xuống dòng. */
@@ -179,15 +178,19 @@ export default function WritingTab() {
 
   return (
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_320px] md:gap-6">
-      <EditorPanel
-        view={view}
-        chapters={chapters}
-        selectedChapter={selectedChapter}
-        proposedProse={proposedProse}
-        manuscriptFiles={manuscriptFiles}
-        onSelectChapter={handleSelectChapter}
-        onBackToList={() => setView("chapters")}
-      />
+      {/* Center panel: Plot (default) hoặc Editor (khi đang viết) */}
+      {view === "editor" ? (
+        <EditorPanel
+          scene={activeScene}
+          proposedProse={proposedProse}
+          isStreaming={isStreaming}
+          onClose={handleCloseEditor}
+        />
+      ) : (
+        <PlotContent novelId={novelId} onWriteChapter={handleWriteChapter} />
+      )}
+
+      {/* Chat panel (right, 320px persistent) */}
       <ChatPanel
         messages={messages}
         input={input}
@@ -205,143 +208,69 @@ export default function WritingTab() {
   );
 }
 
-// ===== Editor Panel =====
+// ===== Editor Panel (center — proposed prose khi HITL) =====
 
 interface EditorPanelProps {
-  view: EditorView;
-  chapters: Chapter[];
-  selectedChapter: Chapter | null;
+  scene: Scene | null;
   proposedProse: string | null;
-  manuscriptFiles: ManuscriptFile[];
-  onSelectChapter: (chapter: Chapter) => void;
-  onBackToList: () => void;
+  isStreaming: boolean;
+  onClose: () => void;
 }
 
 /**
- * Editor panel (center) — hiển thị chapter list / proposed prose / chapter reader.
+ * Editor panel — hiển thị proposed prose từ HITL hoặc loading state.
  *
- * @param view - Trạng thái hiển thị: 'chapters' | 'proposed' | 'reader'.
+ * @param scene - Scene đang được viết (cho tiêu đề).
+ * @param proposedProse - Nội dung prose đề xuất (từ HITL interrupt).
+ * @param isStreaming - Agent đang stream (chưa có proposed prose).
+ * @param onClose - Callback đóng editor → về Plot view.
  */
 function EditorPanel({
-  view,
-  chapters,
-  selectedChapter,
+  scene,
   proposedProse,
-  manuscriptFiles,
-  onSelectChapter,
-  onBackToList,
+  isStreaming,
+  onClose,
 }: EditorPanelProps) {
-  if (view === "proposed" && proposedProse !== null) {
-    return (
-      <div className="rounded-lg border border-vermilion/30 bg-vermilion/5 p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
-            Nội dung đề xuất
-          </p>
-          <button
-            type="button"
-            onClick={onBackToList}
-            className="text-xs text-muted transition-colors hover:text-ink"
-          >
-            ← Quay lại
-          </button>
-        </div>
-        <div className="max-w-prose whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
-          {proposedProse}
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "reader" && selectedChapter) {
-    const prose = findChapterProse(selectedChapter, manuscriptFiles);
-    return (
-      <div className="rounded-lg border border-line bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="font-mono text-xs text-muted">
-              Chương {selectedChapter.number}
-            </p>
-            <h2 className="mt-0.5 font-serif text-xl font-semibold text-ink">
-              {selectedChapter.title ?? "Chưa đặt tên"}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onBackToList}
-            className="text-xs text-muted transition-colors hover:text-ink"
-          >
-            ← Quay lại
-          </button>
-        </div>
-        <div className="mb-4 flex gap-3 text-xs text-muted">
-          <span className="rounded-full border border-line px-2 py-0.5">
-            {statusLabel(selectedChapter.status)}
-          </span>
-          <span className="font-mono">{selectedChapter.word_count} từ</span>
-        </div>
-        {prose ? (
-          <div className="max-w-prose whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
-            {prose}
-          </div>
-        ) : (
-          <p className="text-sm italic text-muted">
-            Nội dung prose chưa tải được.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  // Default: chapter list
   return (
     <div className="rounded-lg border border-line bg-surface p-6">
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
-          Chương
-        </p>
-        <h2 className="mt-0.5 font-serif text-xl font-semibold text-ink">
-          Danh sách chương
-        </h2>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-vermilion dark:text-terracotta">
+            {proposedProse ? "Nội dung đề xuất" : "Đang viết…"}
+          </p>
+          {scene && (
+            <h2 className="mt-0.5 font-serif text-xl font-semibold text-ink">
+              Scene {scene.scene_number}: {scene.title || "Chưa đặt tên"}
+            </h2>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-muted transition-colors hover:text-ink"
+        >
+          ✕ Đóng
+        </button>
       </div>
-      {chapters.length === 0 ? (
+
+      {isStreaming && !proposedProse && (
         <p className="py-8 text-center text-sm text-muted">
-          Chưa có chương. Chat với agent để bắt đầu viết.
+          Agent đang đọc context và viết prose…
         </p>
-      ) : (
-        <ul className="divide-y divide-line">
-          {chapters.map((chapter) => (
-            <li key={chapter.id}>
-              <button
-                type="button"
-                onClick={() => onSelectChapter(chapter)}
-                className="flex w-full items-center gap-3 py-3 text-left transition-colors hover:bg-surface-2"
-              >
-                <span className="font-mono text-sm text-vermilion dark:text-terracotta">
-                  {String(chapter.number).padStart(2, "0")}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-serif text-[15px] text-ink">
-                    {chapter.title ?? "Chưa đặt tên"}
-                  </p>
-                </div>
-                <span
-                  className={`h-2 w-2 flex-none rounded-full ${statusDotClass(chapter.status)}`}
-                  aria-label={statusLabel(chapter.status)}
-                />
-                <span className="font-mono text-xs text-muted">
-                  {chapter.word_count}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      )}
+
+      {proposedProse && (
+        <div className="rounded-lg border border-vermilion/30 bg-vermilion/5 p-4">
+          <div className="max-w-prose whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
+            {proposedProse}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-// ===== Chat Panel =====
+// ===== Chat Panel (right, 320px persistent) =====
 
 interface ChatPanelProps {
   messages: AgentMessage[];
@@ -358,7 +287,8 @@ interface ChatPanelProps {
 }
 
 /**
- * Chat panel (right, 320px) — message list + input + HITL approve/reject.
+ * Chat panel (right, 320px) — persistent, always visible.
+ * Message list + input + HITL approve/reject.
  */
 function ChatPanel({
   messages,
@@ -379,7 +309,7 @@ function ChatPanel({
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="py-8 text-center text-sm text-muted">
-            Chat với agent để viết chapter. Ví dụ: &ldquo;viết chương 1 theo beat 8&rdquo;.
+            Chat với agent hoặc click &ldquo;Viết chương&rdquo; trên scene để bắt đầu.
           </p>
         )}
         {messages.map((msg, i) => (
@@ -474,55 +404,9 @@ function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
       >
         {message.content}
         {isStreaming && (
-          <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-vermilion dark:bg-terracotta align-middle" />
+          <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-vermilion align-middle dark:bg-terracotta" />
         )}
       </div>
     </div>
   );
-}
-
-// ===== Helpers =====
-
-/**
- * Tìm prose content cho chapter từ manuscript files (best-effort match).
- *
- * @param chapter - Chapter metadata.
- * @param files - Manuscript files từ store.
- * @returns Prose text hoặc null.
- */
-function findChapterProse(
-  chapter: Chapter,
-  files: ManuscriptFile[],
-): string | null {
-  const match = files.find(
-    (f) =>
-      f.path.includes(`chapter_${chapter.number}`) ||
-      f.path.includes(`ch-${chapter.number}`) ||
-      f.path.includes(`${chapter.number}.md`),
-  );
-  return match?.content ?? null;
-}
-
-/**
- * Trả class CSS cho dot trạng thái chapter.
- *
- * @param status - Chapter status ('draft' | 'revised' | 'final').
- * @returns Tailwind class string.
- */
-function statusDotClass(status: string): string {
-  if (status === "final") return "bg-sage";
-  if (status === "revised") return "bg-vermilion dark:bg-terracotta";
-  return "border border-muted";
-}
-
-/**
- * Trả nhãn tiếng Việt cho chapter status.
- *
- * @param status - Chapter status.
- * @returns Nhãn hiển thị.
- */
-function statusLabel(status: string): string {
-  if (status === "final") return "Hoàn thành";
-  if (status === "revised") return "Đã sửa";
-  return "Bản nháp";
 }
