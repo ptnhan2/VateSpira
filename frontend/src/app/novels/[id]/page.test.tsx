@@ -145,4 +145,107 @@ describe("WritingWorkspace (2-panel: Plot + Chat)", () => {
     fireEvent.click(screen.getByText("✕ Đóng"));
     expect(screen.getByTestId("plot-content")).toBeInTheDocument();
   });
+
+  it("gõ chat → interrupt → editor panel hiện proposed prose (Bug 1)", async () => {
+    streamWriteMock.mockImplementation(
+      async (
+        _id: string,
+        _msg: string,
+        _uid: string | undefined,
+        cb: { onInterrupt?: (i: unknown) => void },
+      ) => {
+        cb.onInterrupt?.({
+          threadId: "t1",
+          runId: "r1",
+          toolName: "write_file",
+          path: "/manuscript/chapters/chapter_1.md",
+          content: "Prose từ chat input flow.",
+          description: "approve",
+        });
+      },
+    );
+
+    render(createElement(WritingWorkspace));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Viết tin nhắn…")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Viết tin nhắn…"), {
+      target: { value: "Viết chương 1" },
+    });
+    fireEvent.click(screen.getByText("Gửi"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Duyệt")).toBeInTheDocument();
+    });
+    // Editor panel phải chuyển sang view editor + hiện prose (Bug 1 fix)
+    expect(screen.getByText("Nội dung đề xuất")).toBeInTheDocument();
+    expect(
+      screen.getByText("Prose từ chat input flow."),
+    ).toBeInTheDocument();
+  });
+
+  it("approve → re-interrupt → hiện lại approve/reject + prose mới (Bug 2)", async () => {
+    streamWriteMock.mockImplementation(
+      async (
+        _id: string,
+        _msg: string,
+        _uid: string | undefined,
+        cb: {
+          onMetadata?: (m: unknown) => void;
+          onInterrupt?: (i: unknown) => void;
+        },
+      ) => {
+        cb.onMetadata?.({ threadId: "t1", runId: "r1" });
+        cb.onInterrupt?.({
+          threadId: "t1",
+          runId: "r1",
+          toolName: "write_file",
+          path: "/manuscript/chapters/chapter_1.md",
+          content: "Prose lần 1.",
+          description: "approve",
+        });
+      },
+    );
+    resumeWriteMock.mockImplementation(
+      async (
+        _id: string,
+        _tid: string,
+        _decision: string,
+        _uid: string | undefined,
+        cb: { onInterrupt?: (i: unknown) => void },
+      ) => {
+        // Agent re-interrupt (write_file conflict → path mới → HITL lần 2)
+        cb.onInterrupt?.({
+          threadId: "t1",
+          runId: "r2",
+          toolName: "write_file",
+          path: "/manuscript/chapters/chapter_1_v2.md",
+          content: "Prose lần 2 (path mới).",
+          description: "approve",
+        });
+      },
+    );
+
+    render(createElement(WritingWorkspace));
+    await waitFor(() => {
+      expect(screen.getByTestId("write-chapter-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("write-chapter-btn"));
+    await waitFor(() => {
+      expect(screen.getByText("Duyệt")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Duyệt"));
+
+    // Re-interrupt phải hiện lại buttons + prose mới (Bug 2 fix — không stuck)
+    await waitFor(() => {
+      expect(screen.getByText("Duyệt")).toBeInTheDocument();
+      expect(screen.getByText("Từ chối")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("Prose lần 2 (path mới)."),
+    ).toBeInTheDocument();
+  });
 });
