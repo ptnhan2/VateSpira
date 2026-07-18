@@ -245,6 +245,7 @@ export default function WritingWorkspace() {
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
+        setView("plot");
       },
       onError: (err) => {
         setError(err);

@@ -248,4 +248,56 @@ describe("WritingWorkspace (2-panel: Plot + Chat)", () => {
       screen.getByText("Prose lần 2 (path mới)."),
     ).toBeInTheDocument();
   });
+
+  it("reject → complete → view về Plot (Fix 3)", async () => {
+    streamWriteMock.mockImplementation(
+      async (
+        _id: string,
+        _msg: string,
+        _uid: string | undefined,
+        cb: {
+          onMetadata?: (m: unknown) => void;
+          onInterrupt?: (i: unknown) => void;
+        },
+      ) => {
+        cb.onMetadata?.({ threadId: "t1", runId: "r1" });
+        cb.onInterrupt?.({
+          threadId: "t1",
+          runId: "r1",
+          toolName: "write_file",
+          path: "/manuscript/chapters/chapter_1.md",
+          content: "Prose bị từ chối.",
+          description: "approve",
+        });
+      },
+    );
+    resumeWriteMock.mockImplementation(
+      async (
+        _id: string,
+        _tid: string,
+        _decision: string,
+        _uid: string | undefined,
+        cb: { onComplete?: () => void },
+      ) => {
+        cb.onComplete?.();
+      },
+    );
+
+    render(createElement(WritingWorkspace));
+    await waitFor(() => {
+      expect(screen.getByTestId("write-chapter-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("write-chapter-btn"));
+    await waitFor(() => {
+      expect(screen.getByText("Từ chối")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Từ chối"));
+
+    // Sau reject + complete → view phải về Plot → EditorPanel unmounted (Fix 3)
+    await waitFor(() => {
+      expect(screen.queryByText("✕ Đóng")).not.toBeInTheDocument();
+    });
+  });
 });
