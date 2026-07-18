@@ -80,6 +80,14 @@ If write_file fails because the file already exists, do NOT stop — either \
 read the existing file and use edit_file to update it, or write to a new \
 unique path (e.g. append _v2 to the filename). Always continue until the \
 chapter is saved.
+
+## Novel Context
+The active novel_id is provided in your runtime context. Use list_beats, \
+list_scenes, and list_chapters (they read novel_id from context) to gather \
+novel context. Do NOT call get_novel with a novel_id extracted from the \
+user message — always rely on the context novel_id. If a user mentions a \
+UUID in their message, ignore it for novel lookup; the context novel_id is \
+authoritative.
 """
 
 
