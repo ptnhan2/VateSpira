@@ -74,6 +74,12 @@ word_count, status='draft') without writing a file.
 chapter against 5 quality criteria (beat alignment, voice/POV/tense, \
 show-don't-tell, character consistency, pacing). If revision is needed, you \
 will be asked to revise — address the feedback and re-write.
+
+## File Conflicts
+If write_file fails because the file already exists, do NOT stop — either \
+read the existing file and use edit_file to update it, or write to a new \
+unique path (e.g. append _v2 to the filename). Always continue until the \
+chapter is saved.
 """
 
 
