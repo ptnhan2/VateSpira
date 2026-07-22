@@ -30,18 +30,33 @@ def _mock_init_beats():
 
 # --- Helpers ---
 
-def _make_runtime(user_id=None):
-    """Tạo ToolRuntime mock với context chứa user_id.
+def _make_runtime(user_id=None, novel_id=None):
+    """Tạo ToolRuntime mock với context chứa user_id + novel_id.
 
     Args:
         user_id: Giá trị user_id trong context (None = context None).
+        novel_id: Giá trị novel_id trong context (mặc định None).
 
     Returns:
         ToolRuntime instance với context dict hoặc None.
     """
+    if user_id is None and novel_id is None:
+        return ToolRuntime(
+            state=None,
+            context=None,
+            config={},
+            stream_writer=None,
+            tool_call_id="test-call",
+            store=None,
+        )
+    ctx = {}
+    if user_id is not None:
+        ctx["user_id"] = user_id
+    if novel_id is not None:
+        ctx["novel_id"] = novel_id
     return ToolRuntime(
         state=None,
-        context={"user_id": user_id} if user_id is not None else None,
+        context=ctx,
         config={},
         stream_writer=None,
         tool_call_id="test-call",
@@ -185,10 +200,10 @@ def test_list_novels_raises_without_user_id():
 # --- get_novel tool ---
 
 def test_get_novel_returns_record_json():
-    """get_novel tool trả về JSON record khi tìm thấy."""
-    rt = _make_runtime(user_id="u1")
+    """get_novel tool trả về JSON record khi tìm thấy (novel_id từ context)."""
+    rt = _make_runtime(user_id="u1", novel_id="n1")
     with patch.object(agent.codex_service, "get_novel", return_value={"id": "n1", "title": "T"}) as mock_fn:
-        result = agent.get_novel.func(novel_id="n1", runtime=rt)
+        result = agent.get_novel.func(runtime=rt)
     parsed = json.loads(result)
     assert parsed["id"] == "n1"
     mock_fn.assert_called_once_with(novel_id="n1", user_id="u1")
@@ -196,9 +211,9 @@ def test_get_novel_returns_record_json():
 
 def test_get_novel_returns_error_json_when_not_found():
     """get_novel tool trả về JSON error khi novel không tìm thấy."""
-    rt = _make_runtime(user_id="u1")
+    rt = _make_runtime(user_id="u1", novel_id="n1")
     with patch.object(agent.codex_service, "get_novel", return_value=None):
-        result = agent.get_novel.func(novel_id="n1", runtime=rt)
+        result = agent.get_novel.func(runtime=rt)
     parsed = json.loads(result)
     assert "error" in parsed
     assert "n1" in parsed["error"]
@@ -209,7 +224,16 @@ def test_get_novel_raises_without_user_id():
     rt = _make_runtime(user_id=None)
     with patch.object(agent.codex_service, "get_novel") as mock_fn:
         with pytest.raises(ValueError, match="user_id"):
-            agent.get_novel.func(novel_id="n1", runtime=rt)
+            agent.get_novel.func(runtime=rt)
+    mock_fn.assert_not_called()
+
+
+def test_get_novel_raises_without_novel_id():
+    """get_novel tool raises ValueError khi no novel_id trong context."""
+    rt = _make_runtime(user_id="u1", novel_id=None)
+    with patch.object(agent.codex_service, "get_novel") as mock_fn:
+        with pytest.raises(ValueError, match="novel_id"):
+            agent.get_novel.func(runtime=rt)
     mock_fn.assert_not_called()
 
 

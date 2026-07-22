@@ -184,6 +184,7 @@ export default function WritingWorkspace() {
       onInterrupt: (intr) => {
         setInterrupt(intr);
         setProposedProse(intr.content);
+        setView("editor");
         setIsStreaming(false);
       },
       onComplete: () => {
@@ -206,6 +207,13 @@ export default function WritingWorkspace() {
 
     await resumeWrite(novelId, threadId, "approve", undefined, {
       onState: (msgs) => setMessages(msgs),
+      onInterrupt: (intr) => {
+        // Agent re-interrupt (vd write_file conflict → path mới → HITL lần 2)
+        setInterrupt(intr);
+        setProposedProse(intr.content);
+        setView("editor");
+        setIsStreaming(false);
+      },
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
@@ -227,9 +235,17 @@ export default function WritingWorkspace() {
 
     await resumeWrite(novelId, threadId, "reject", undefined, {
       onState: (msgs) => setMessages(msgs),
+      onInterrupt: (intr) => {
+        // Agent re-interrupt sau reject (vd agent đề xuất lại)
+        setInterrupt(intr);
+        setProposedProse(intr.content);
+        setView("editor");
+        setIsStreaming(false);
+      },
       onComplete: () => {
         setIsStreaming(false);
         setProposedProse(null);
+        setView("plot");
       },
       onError: (err) => {
         setError(err);

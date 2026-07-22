@@ -74,6 +74,12 @@ word_count, status='draft') without writing a file.
 chapter against 5 quality criteria (beat alignment, voice/POV/tense, \
 show-don't-tell, character consistency, pacing). If revision is needed, you \
 will be asked to revise — address the feedback and re-write.
+
+## File Conflicts
+If write_file fails because the file already exists, do NOT stop — either \
+read the existing file and use edit_file to update it, or write to a new \
+unique path (e.g. append _v2 to the filename). Always continue until the \
+chapter is saved.
 """
 
 
@@ -430,16 +436,18 @@ def list_novels(runtime: ToolRuntime) -> str:
 
 
 @tool
-def get_novel(novel_id: str, runtime: ToolRuntime) -> str:
-    """Lấy chi tiết một novel theo id.
+def get_novel(runtime: ToolRuntime) -> str:
+    """Lấy chi tiết novel hiện tại (từ runtime context).
 
-    Args:
-        novel_id: UUID của novel cần xem.
+    Novel_id được đọc từ runtime context — agent không cần truyền UUID
+    (tránh truncate/extract UUID sai từ user message). Giống list_beats
+    và list_scenes.
 
     Returns:
         JSON string chứa novel record, hoặc thông báo lỗi không tìm thấy.
     """
     user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
     result = codex_service.get_novel(novel_id=novel_id, user_id=user_id)
     if result is None:
         return json.dumps(
