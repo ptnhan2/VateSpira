@@ -80,14 +80,6 @@ If write_file fails because the file already exists, do NOT stop — either \
 read the existing file and use edit_file to update it, or write to a new \
 unique path (e.g. append _v2 to the filename). Always continue until the \
 chapter is saved.
-
-## Novel Context
-The active novel_id is provided in your runtime context. Use list_beats, \
-list_scenes, and list_chapters (they read novel_id from context) to gather \
-novel context. Do NOT call get_novel with a novel_id extracted from the \
-user message — always rely on the context novel_id. If a user mentions a \
-UUID in their message, ignore it for novel lookup; the context novel_id is \
-authoritative.
 """
 
 
@@ -444,16 +436,18 @@ def list_novels(runtime: ToolRuntime) -> str:
 
 
 @tool
-def get_novel(novel_id: str, runtime: ToolRuntime) -> str:
-    """Lấy chi tiết một novel theo id.
+def get_novel(runtime: ToolRuntime) -> str:
+    """Lấy chi tiết novel hiện tại (từ runtime context).
 
-    Args:
-        novel_id: UUID của novel cần xem.
+    Novel_id được đọc từ runtime context — agent không cần truyền UUID
+    (tránh truncate/extract UUID sai từ user message). Giống list_beats
+    và list_scenes.
 
     Returns:
         JSON string chứa novel record, hoặc thông báo lỗi không tìm thấy.
     """
     user_id = _get_user_id(runtime)
+    novel_id = _get_novel_id(runtime)
     result = codex_service.get_novel(novel_id=novel_id, user_id=user_id)
     if result is None:
         return json.dumps(
