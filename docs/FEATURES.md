@@ -12,7 +12,7 @@
 | UF-4: Write scene (HITL + rubric) | #6 | done | docs/features/uf4-write-scene.md | 2026-07-18 |
 | Follow-up: Chapter status persistence (rubric → chapters.status) | #28 | done | docs/features/uf4-write-scene.md §3 | 2026-07-17 |
 | UF-5: Consistency check | #7 | designed | docs/features/uf5-consistency-check.md | 2026-07-28 |
-| UF-6: Extract from chat (codex growth) | #8 | not-started | docs/ARCHITECTURE.md Section 4 | - |
+| UF-6: Extract from chat (codex growth) | #8 | designed | docs/features/uf6-extract-from-chat.md | 2026-07-29 |
 | Follow-up: Wire FE novel creation through backend agent API | #12 | done | - | - |
 
 Status: not-started -> designed -> in-progress -> done -> deployed
