@@ -13,7 +13,7 @@
 - **Bug 1 (handleSend):** `onInterrupt` set `proposedProse` nhưng quên `setView("editor")` → EditorPanel không render khi HITL từ chat input. Fix: thêm `setView("editor")`.
 - **Bug 2 (handleApprove/handleReject):** resume callbacks thiếu `onInterrupt` → khi agent re-interrupt sau resume (write_file conflict HOẶC rubric revision → re-propose), event bị drop → isStreaming stuck true → UI freeze. Fix: thêm `onInterrupt` handler vào cả 2 resume callbacks.
 - **Fix 3 (handleReject onComplete):** thiếu `setView("plot")` (handleApprove có) → editor kẹt sau reject+complete. Fix: thêm `setView("plot")`.
-- **Fix 4 (agent prompt):** LLM extract UUID truncated từ user message → get_novel crash. novel_id đã có trong context. Fix: prompt "rely on context novel_id, ignore user-mentioned UUIDs".
+- **Fix 4 (agent prompt):** LLM extract UUID truncated từ user message → get_novel crash. Root-cause fix: `get_novel` drop `novel_id` param, đọc novel_id từ `_get_novel_id(runtime)` — same pattern as list_beats/list_scenes. Prompt-only fix (bảo agent ignore UUID) bị Reviewer REVISE → đổi sang root-cause. novel_id đã có trong context, không cần agent truyền.
 - **E2E flow verified:** chat → HITL → editor hiện prose (Bug 1) → reject → rubric revision → re-interrupt → buttons reappear (Bug 2) → reject again → complete → view→plot (Fix 3).
 
 ## Pitfalls
